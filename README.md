@@ -22,7 +22,7 @@ To solve this issue, I slightly adjusted the display layout. In addition, the ex
 ### GitHub
 At work, I saw people mainly have 2 ways to deal with code review:
 1. Just approve, no one cares about the code. In this case, developers will finally take huge tech debt prices for their choice (unless your team is full of well-behaved talents, which is most likely impossible in the real world because of labour cost control).
-2. Conduct thorough code reviews and provide extensive comments. The thing is it will take a long time for both reviewers and authors to complete their job if they can't communicate efficiently.
+2. Conduct thorough code reviews and provide extensive comments. The thing is it will take a long time for both reviewers and authors to complete their job if they can't communicate efficiently. For example, reviewers may forget to review PRs because they are busy working on other high-priority tasks. On the other hand, authors might also forget to merge their approved PRs before the release window.
 
 Personally, I prefer option #2 because I believe people can benefit from thorough code reviews. To streamline the code review process, I have revamped the menu bar. My goal is to help authors clearly track all their ongoing pull requests, whether they are under review or have requested changes. So as for reviewers.
 
