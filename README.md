@@ -29,7 +29,7 @@ Personally, I prefer option #2 because I believe people can benefit from thoroug
 Moreover, my team members like to mark their ongoing but not-ready PRs as drafts so I also include this feature in this version. Feel free to try it out!
 
 <p align="center">
-<img width="200" alt="github-extension" src="https://github.com/user-attachments/assets/654bd28e-d371-4778-bd66-f17b4ce941cd" />
+<img width="200" alt="image" src="https://github.com/user-attachments/assets/9e586923-06a3-4e33-a88c-a6e6be4e0d73" />
 </p>
 
 ## 🛠 Installation
