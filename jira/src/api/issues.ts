@@ -142,8 +142,26 @@ export type Issue = {
   };
 };
 
+const SVG_DATA_URI_PREFIX = "data:image/svg+xml;base64,";
+
+const getIssueTypeIconUri = async (iconUrl: string) => {
+  const dataUri = await getAuthenticatedUri(iconUrl, "image/svg+xml");
+  if (!dataUri.startsWith(SVG_DATA_URI_PREFIX)) {
+    return dataUri;
+  }
+
+  const svg = Buffer.from(dataUri.slice(SVG_DATA_URI_PREFIX.length), "base64").toString("utf8");
+  const paddedSvg = svg.replace(/viewBox="([\d.-]+) ([\d.-]+) ([\d.]+) ([\d.]+)"/, (_, x, y, width, height) => {
+    const paddingX = Number(width) / 4;
+    const paddingY = Number(height) / 4;
+    return `viewBox="${Number(x) - paddingX} ${Number(y) - paddingY} ${Number(width) + paddingX * 2} ${Number(height) + paddingY * 2}"`;
+  });
+
+  return `${SVG_DATA_URI_PREFIX}${Buffer.from(paddedSvg).toString("base64")}`;
+};
+
 export const resolveIssueTypeIconUris = async (issuetype: IssueType) => {
-  const resolvedIconUri = await getAuthenticatedUri(issuetype.iconUrl, "image/jpeg");
+  const resolvedIconUri = await getIssueTypeIconUri(issuetype.iconUrl);
   issuetype.iconUrl = resolvedIconUri;
 
   return issuetype;
@@ -154,15 +172,13 @@ type GetIssuesResponse = {
 };
 
 export async function getIssues({ jql } = { jql: "" }) {
-  const params = {
-    fields: "summary,updated,issuetype,status,priority,assignee,project,watches,parent",
-    startAt: "0",
-    maxResults: "200",
-    validateQuery: "warn",
+  const body = {
+    fields: ["summary", "updated", "issuetype", "status", "priority", "assignee", "project", "watches", "parent"],
+    maxResults: 200,
     jql,
   };
 
-  const result = await request<GetIssuesResponse>("/search", { params });
+  const result = await request<GetIssuesResponse>("/search/jql", { method: "POST", body: JSON.stringify(body) });
 
   if (!result?.issues) {
     return result?.issues;
@@ -170,7 +186,7 @@ export async function getIssues({ jql } = { jql: "" }) {
 
   const resolvedIssues = await Promise.all(
     result.issues.map(async (issue) => {
-      issue.fields.issuetype.iconUrl = await getAuthenticatedUri(issue.fields.issuetype.iconUrl, "image/jpeg");
+      issue.fields.issuetype.iconUrl = await getIssueTypeIconUri(issue.fields.issuetype.iconUrl);
       return issue;
     }),
   );
@@ -230,7 +246,7 @@ async function getCreateIssueMetadataWithParams(params: {
     result.projects.map(async (project) => {
       const resolvedIssueTypes = await Promise.all(
         project.issuetypes.map(async (issueType) => {
-          issueType.iconUrl = await getAuthenticatedUri(issueType.iconUrl, "image/jpeg");
+          issueType.iconUrl = await getIssueTypeIconUri(issueType.iconUrl);
           return issueType;
         }),
       );
@@ -333,11 +349,10 @@ export async function getIssue(issueIdOrKey: string) {
     return issue;
   }
 
-  issue.fields.issuetype.iconUrl = await getAuthenticatedUri(issue.fields.issuetype.iconUrl, "image/jpeg");
+  issue.fields.issuetype.iconUrl = await getIssueTypeIconUri(issue.fields.issuetype.iconUrl);
   if (issue.fields.parent) {
-    issue.fields.parent.fields.issuetype.iconUrl = await getAuthenticatedUri(
+    issue.fields.parent.fields.issuetype.iconUrl = await getIssueTypeIconUri(
       issue.fields.parent.fields.issuetype.iconUrl,
-      "image/jpeg",
     );
   }
 

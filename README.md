@@ -9,15 +9,7 @@ A collection of custom extensions designed to streamline your working workflows 
 
 ## 🧩 Extensions
 ### Jira
-My Filter is a great productivity command because you don’t need to click on the slow Jira webpage every day. You can still track all the lists using the filters you created or used.
-
-However, the official extension prioritizes functionality over usability, which is frustrating when the list is filled with tasks with the same name, frustrating power users like me.
-
-To solve this issue, I slightly adjusted the display layout. In addition, the extension now supports showing the parent task (if it exists). Once you install the extension, you’ll be able to distinguish all tasks more easily through visual cues in the user interface.
-
-|Before|After|
-|:---:|:---:|
-|![jira-filter-before](https://github.com/user-attachments/assets/b7a14d48-2000-4a9f-8564-d58f25e50f18)|![jira-filter-after](https://github.com/user-attachments/assets/ba3c6ac4-998e-4815-8894-e1f06917a03e)|
+Browse your saved Jira filters, with each issue's parent shown on the list. See [jira/README.md](jira/README.md).
 
 ### GitHub
 At work, I saw people mainly have 2 ways to deal with code review:

@@ -50,7 +50,7 @@ export async function request<T>(path: string, options: RequestOptions = { metho
   }
 }
 
-export const getAuthenticatedUri = async (uri: string, contentType: string) => {
+export const getAuthenticatedUri = async (uri: string, fallbackContentType: string) => {
   const { authorizationHeader } = getJiraCredentials();
   const response = await fetch(uri, {
     headers: {
@@ -59,6 +59,8 @@ export const getAuthenticatedUri = async (uri: string, contentType: string) => {
   });
 
   if (response.ok) {
+    // Jira serves images in several formats, so the response type wins over the caller's guess.
+    const contentType = response.headers.get("content-type")?.split(";")[0] || fallbackContentType;
     const dataUri = `data:${contentType};base64,${Buffer.from(await response.arrayBuffer()).toString("base64")}`;
     return dataUri;
   } else {

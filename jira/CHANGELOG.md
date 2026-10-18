@@ -1,5 +1,10 @@
 # Jira Changelog
 
+## [Fix My Filters] - 2026-10-19
+
+- Fix My Filters showing no issues.
+- Fix blank issue type icons.
+
 ## [New Additions & Update] - 2025-01-16
 
 - Support for displaying parent ticket on My Filter.
