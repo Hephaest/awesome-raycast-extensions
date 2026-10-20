@@ -12,22 +12,12 @@ A collection of custom extensions designed to streamline your working workflows 
 Browse your saved Jira filters, with each issue's parent shown on the list. See [jira/README.md](jira/README.md).
 
 ### GitHub
-At work, I saw people mainly have 2 ways to deal with code review:
-1. Just approve, no one cares about the code. In this case, developers will finally take huge tech debt prices for their choice (unless your team is full of well-behaved talents, which is most likely impossible in the real world because of labour cost control).
-2. Conduct thorough code reviews and provide extensive comments. The thing is it will take a long time for both reviewers and authors to complete their job if they can't communicate efficiently. For example, reviewers may forget to review PRs because they are busy working on other high-priority tasks. On the other hand, authors might also forget to merge their approved PRs before the release window.
-
-Personally, I prefer option #2 because I believe people can benefit from thorough code reviews. To streamline the code review process, I have revamped the menu bar. My goal is to help authors clearly track all their ongoing pull requests, whether they are under review or have requested changes. So as for reviewers.
-
-Moreover, my team members like to mark their ongoing but not-ready PRs as drafts so I also include this feature in this version. Feel free to try it out!
-
-<p align="center">
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/9e586923-06a3-4e33-a88c-a6e6be4e0d73" />
-</p>
+See the pull requests waiting on you from the menu bar, and search your review requests. See [github/README.md](github/README.md).
 
 ## 🛠 Installation
 1. Clone this repo to your desktop.
 2. Open Reycast and type "Import Extensions."
-3. Open your cloned repository and select the specific extension folder (not the root folder). For example, choose either the `jira` or `github-review-requests` folder.
+3. Open your cloned repository and select the specific extension folder (not the root folder). For example, choose either the `jira` or `github` folder.
 4. Open the Reycast Extension Settings window.
 5. Configure the necessary settings for the extension, such as your Personal Access Token.
 

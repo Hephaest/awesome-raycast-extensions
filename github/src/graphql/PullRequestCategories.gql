@@ -1,0 +1,67 @@
+fragment PullRequestSummary on PullRequest {
+  __typename
+  id
+  title
+  url
+  updatedAt
+
+  author {
+    login
+    avatarUrl
+  }
+
+  repository {
+    nameWithOwner
+  }
+}
+
+query PullRequestCategories(
+  $needsYourReview: String!
+  $yourDrafts: String!
+  $waitingForReview: String!
+  $changesRequested: String!
+  $failingChecks: String!
+  $readyToMerge: String!
+) {
+  needsYourReview: search(type: ISSUE, first: 50, query: $needsYourReview) {
+    issueCount
+    nodes {
+      ...PullRequestSummary
+    }
+  }
+
+  yourDrafts: search(type: ISSUE, first: 50, query: $yourDrafts) {
+    issueCount
+    nodes {
+      ...PullRequestSummary
+    }
+  }
+
+  waitingForReview: search(type: ISSUE, first: 50, query: $waitingForReview) {
+    issueCount
+    nodes {
+      ...PullRequestSummary
+    }
+  }
+
+  changesRequested: search(type: ISSUE, first: 50, query: $changesRequested) {
+    issueCount
+    nodes {
+      ...PullRequestSummary
+    }
+  }
+
+  failingChecks: search(type: ISSUE, first: 50, query: $failingChecks) {
+    issueCount
+    nodes {
+      ...PullRequestSummary
+    }
+  }
+
+  readyToMerge: search(type: ISSUE, first: 50, query: $readyToMerge) {
+    issueCount
+    nodes {
+      ...PullRequestSummary
+    }
+  }
+}
