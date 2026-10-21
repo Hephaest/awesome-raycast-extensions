@@ -22,7 +22,6 @@ type CreateSubEnvironmentValues = {
   serviceNames: string[];
 };
 
-// ! Mirrors Zadig's own naming, so a new environment never lands in a namespace someone else already uses, which Delete Environment would wipe.
 const getDefaultNamespace = (projectKey: string, name: string) => `${projectKey}-env-${name}`;
 
 export default function CreateSubEnvironmentForm({
@@ -38,7 +37,7 @@ export default function CreateSubEnvironmentForm({
       baseEnvironmentKey: FormValidation.Required,
       name: name => {
         if (!name) {
-          return "The item is required";
+          return "Name is required";
         }
 
         if (testEnvironments.some(({ env_key }) => env_key === name)) {
@@ -68,15 +67,21 @@ export default function CreateSubEnvironmentForm({
         return;
       }
 
-      onCreate();
+      // The form closes as soon as Zadig accepts the create, so it cannot be submitted twice, and the toast reports the rest.
+      pop();
+
+      if (serviceNames.length === 0) {
+        toast.style = Toast.Style.Success;
+        toast.title = `Created ${name}`;
+        onCreate();
+        return;
+      }
 
       try {
-        if (serviceNames.length > 0) {
-          toast.title = `Adding services to ${name}`;
-          const createdEnvironment = await waitForEnvironmentToBeReady(projectKey, name);
-          await addHelmServices(projectKey, createdEnvironment, serviceNames);
-        }
-
+        toast.title = `Waiting for ${name} to be ready`;
+        const createdEnvironment = await waitForEnvironmentToBeReady(projectKey, name);
+        toast.title = `Adding services to ${name}`;
+        await addHelmServices(projectKey, createdEnvironment, serviceNames);
         toast.style = Toast.Style.Success;
         toast.title = `Created ${name}`;
       } catch (error) {
@@ -85,9 +90,10 @@ export default function CreateSubEnvironmentForm({
         toast.message = error instanceof Error ? error.message : undefined;
       }
 
-      pop();
+      onCreate();
     },
   });
+
   const { data: baseEnvironmentServices, isLoading } = useCachedPromise(
     getEnvironmentServices,
     [projectKey, values.baseEnvironmentKey, false],
@@ -110,19 +116,19 @@ export default function CreateSubEnvironmentForm({
         {...itemProps.baseEnvironmentKey}
       >
         {testEnvironments.map(({ env_key }) => (
-          <Form.Dropdown.Item key={env_key} title={env_key} value={env_key} icon={Icon.Layers} />
+          <Form.Dropdown.Item key={env_key} title={env_key} value={env_key} />
         ))}
       </Form.Dropdown>
       <Form.TextField title="Name" placeholder="dev42" {...itemProps.name} />
       <Form.TextField
         title="Namespace"
         placeholder={getDefaultNamespace(projectKey, values.name || "<name>")}
-        info="Leave it empty to use Zadig's default, which no other environment shares."
+        info="Leave it empty to use the namespace shown in the field."
         {...itemProps.namespace}
       />
       <Form.TagPicker title="Services" {...itemProps.serviceNames}>
         {baseEnvironmentServices?.map(({ serviceName }) => (
-          <Form.TagPicker.Item key={serviceName} title={serviceName} value={serviceName} icon={Icon.Box} />
+          <Form.TagPicker.Item key={serviceName} title={serviceName} value={serviceName} />
         ))}
       </Form.TagPicker>
     </Form>

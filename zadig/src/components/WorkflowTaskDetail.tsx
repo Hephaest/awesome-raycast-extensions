@@ -1,25 +1,26 @@
-import { Icon, List } from "@raycast/api";
+import { Color, List } from "@raycast/api";
 import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { getWorkflowTask, type WorkflowTask, type WorkflowTaskBuild } from "../api/workflows";
-import { formatTime } from "../formatTime";
-import { getStatusColor } from "../statusColor";
+import { formatTime } from "../utils/time";
+import { escapeMarkdown } from "../utils/markdown";
+import { getStatusColor } from "../utils/status";
 
 type WorkflowTaskDetailProps = {
   task: WorkflowTask;
 };
 
-// ! Commit messages and branch names are written by anyone who can push, so markdown is escaped to stop injected images or links, and only the first line is kept.
-const toTableCell = (text: string) => text.split("\n")[0].replace(/[\\`*_[\]()!<>#|~]/g, "\\$&") || "-";
-
-const toBuildTable = (builds: WorkflowTaskBuild[]) =>
+const toRepositoriesMarkdown = (builds: WorkflowTaskBuild[]) =>
   [
-    "| **Repository** | **Branch** | **Commit** |",
-    "| --- | --- | --- |",
-    ...builds.map(
-      build =>
-        `| ${toTableCell(build.repoName)} | ${toTableCell(build.branch)} | \`${build.commitId.slice(0, 7)}\` ${toTableCell(build.commitMessage)} |`,
+    `## Repositories (${builds.length})`,
+    ...builds.map(build =>
+      [
+        `### ${escapeMarkdown(build.repoName)}`,
+        `- Branch: ${escapeMarkdown(build.branch)}`,
+        `- Commit: ${build.commitId ? escapeMarkdown(build.commitId.slice(0, 7)) : "-"}`,
+        `- Subject: ${build.commitMessage ? escapeMarkdown(build.commitMessage.split("\n")[0]) : "-"}`,
+      ].join("\n"),
     ),
-  ].join("\n");
+  ].join("\n\n");
 
 export default function WorkflowTaskDetail({ task }: WorkflowTaskDetailProps) {
   const { data: detail, isLoading } = useCachedPromise(getWorkflowTask, [task.workflow_key, task.task_id]);
@@ -27,40 +28,34 @@ export default function WorkflowTaskDetail({ task }: WorkflowTaskDetailProps) {
   return (
     <List.Item.Detail
       isLoading={isLoading}
-      markdown={detail && detail.builds.length > 0 ? toBuildTable(detail.builds) : undefined}
+      markdown={detail && detail.builds.length > 0 ? toRepositoriesMarkdown(detail.builds) : undefined}
       metadata={
         <List.Item.Detail.Metadata>
+          <List.Item.Detail.Metadata.TagList title="Status">
+            <List.Item.Detail.Metadata.TagList.Item text={task.status} color={getStatusColor(task.status)} />
+          </List.Item.Detail.Metadata.TagList>
+          {detail && detail.stages.length > 0 && (
+            <List.Item.Detail.Metadata.TagList title="Stages">
+              {detail.stages.map(stage => (
+                <List.Item.Detail.Metadata.TagList.Item
+                  key={stage.name}
+                  text={stage.name}
+                  color={Color.SecondaryText}
+                />
+              ))}
+            </List.Item.Detail.Metadata.TagList>
+          )}
           {detail?.choices.map(choice => (
-            <List.Item.Detail.Metadata.Label
-              key={choice.name}
-              title={choice.name}
-              icon={Icon.Layers}
-              text={choice.value}
-            />
+            <List.Item.Detail.Metadata.Label key={choice.name} title={choice.name} text={choice.value} />
           ))}
           <List.Item.Detail.Metadata.Label
-            title="Executor"
+            title="Started By"
             icon={getAvatarIcon(task.task_creator)}
             text={task.task_creator}
           />
-          <List.Item.Detail.Metadata.Separator />
-          <List.Item.Detail.Metadata.Label title="Created Time" icon={Icon.Clock} text={formatTime(task.create_time)} />
-          <List.Item.Detail.Metadata.Label title="Started Time" icon={Icon.Clock} text={formatTime(task.start_time)} />
-          <List.Item.Detail.Metadata.Label title="Ended Time" icon={Icon.Clock} text={formatTime(task.end_time)} />
-          {detail && detail.stages.length > 0 && (
-            <>
-              <List.Item.Detail.Metadata.Separator />
-              <List.Item.Detail.Metadata.TagList title="Stages">
-                {detail.stages.map(stage => (
-                  <List.Item.Detail.Metadata.TagList.Item
-                    key={stage.name}
-                    text={stage.name}
-                    color={getStatusColor(stage.status)}
-                  />
-                ))}
-              </List.Item.Detail.Metadata.TagList>
-            </>
-          )}
+          <List.Item.Detail.Metadata.Label title="Created" text={formatTime(task.create_time)} />
+          <List.Item.Detail.Metadata.Label title="Started" text={formatTime(task.start_time)} />
+          <List.Item.Detail.Metadata.Label title="Ended" text={formatTime(task.end_time)} />
         </List.Item.Detail.Metadata>
       }
     />

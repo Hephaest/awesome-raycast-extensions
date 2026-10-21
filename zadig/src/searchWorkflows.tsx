@@ -11,6 +11,7 @@ export default function SearchWorkflows() {
   const { data: workflows, isLoading: isLoadingWorkflows } = useCachedPromise(getWorkflows, [projectKey], {
     execute: Boolean(projectKey),
   });
+  const isLoading = isLoadingProjects || isLoadingWorkflows;
   const { data: sortedWorkflows, visitItem } = useFrecencySorting(workflows, {
     namespace: "workflows",
     key: workflow => `${projectKey}/${workflow.workflow_key}`,
@@ -18,16 +19,23 @@ export default function SearchWorkflows() {
 
   return (
     <List
-      isLoading={isLoadingProjects || isLoadingWorkflows}
+      isLoading={isLoading}
       searchBarPlaceholder="Search workflows"
       searchBarAccessory={<ProjectDropdown projects={projects} value={project?.project_key} onChange={setProjectKey} />}
     >
+      {!isLoading && (
+        <List.EmptyView
+          icon={Icon.Bolt}
+          title="No Custom Workflows Found"
+          description="Only custom workflows are listed, because only they have run endpoints in the Zadig OpenAPI."
+        />
+      )}
       {sortedWorkflows.map(workflow => (
         <List.Item
           key={workflow.workflow_key}
-          icon={Icon.Bolt}
           title={workflow.workflow_name}
-          subtitle={workflow.workflow_key}
+          subtitle={workflow.workflow_key === workflow.workflow_name ? undefined : workflow.workflow_key}
+          keywords={[workflow.workflow_key]}
           accessories={[
             { date: new Date(workflow.update_time * 1000), tooltip: "Last updated" },
             { icon: getAvatarIcon(workflow.update_by), tooltip: workflow.update_by },

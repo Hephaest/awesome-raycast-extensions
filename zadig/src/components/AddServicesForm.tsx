@@ -14,8 +14,14 @@ type AddServicesValues = {
   serviceNames: string[];
 };
 
+const pluralRules = new Intl.PluralRules("en-US");
+
+const formatServiceCount = (count: number) =>
+  `${count} ${pluralRules.select(count) === "one" ? "service" : "services"}`;
+
 export default function AddServicesForm({ projectKey, environment, sourceEnvironments, onAdd }: AddServicesFormProps) {
   const { pop } = useNavigation();
+
   const { handleSubmit, itemProps, values } = useForm<AddServicesValues>({
     initialValues: { sourceEnvironmentKey: sourceEnvironments[0]?.env_key, serviceNames: [] },
     validation: {
@@ -31,7 +37,7 @@ export default function AddServicesForm({ projectKey, environment, sourceEnviron
       try {
         await addHelmServices(projectKey, environment, serviceNames);
         toast.style = Toast.Style.Success;
-        toast.title = `Added ${serviceNames.length === 1 ? "1 service" : `${serviceNames.length} services`} to ${environment.env_key}`;
+        toast.title = `Added ${formatServiceCount(serviceNames.length)} to ${environment.env_key}`;
         onAdd();
         pop();
       } catch (error) {
@@ -41,18 +47,22 @@ export default function AddServicesForm({ projectKey, environment, sourceEnviron
       }
     },
   });
+
   const { data: sourceServices, isLoading: isLoadingSource } = useCachedPromise(
     getEnvironmentServices,
     [projectKey, values.sourceEnvironmentKey, false],
     { execute: Boolean(values.sourceEnvironmentKey) },
   );
+
   const { data: targetServices, isLoading: isLoadingTarget } = useCachedPromise(getEnvironmentServices, [
     projectKey,
     environment.env_key,
     environment.production,
   ]);
+
   const existingServiceNames = new Set(targetServices?.map(({ serviceName }) => serviceName));
-  const addableServices = sourceServices?.filter(({ serviceName }) => !existingServiceNames.has(serviceName));
+  const addableServices =
+    targetServices && sourceServices?.filter(({ serviceName }) => !existingServiceNames.has(serviceName));
 
   return (
     <Form
@@ -65,17 +75,17 @@ export default function AddServicesForm({ projectKey, environment, sourceEnviron
       }
     >
       <Form.Dropdown
-        title="List Services From"
-        info="Picks which environment's services to offer. Each service deploys from its definition in the project."
+        title="Source Environment"
+        info="The services this environment runs are offered below. Each one deploys from its definition in the project."
         {...itemProps.sourceEnvironmentKey}
       >
         {sourceEnvironments.map(({ env_key }) => (
-          <Form.Dropdown.Item key={env_key} title={env_key} value={env_key} icon={Icon.Layers} />
+          <Form.Dropdown.Item key={env_key} title={env_key} value={env_key} />
         ))}
       </Form.Dropdown>
       <Form.TagPicker title="Services" {...itemProps.serviceNames}>
         {addableServices?.map(({ serviceName }) => (
-          <Form.TagPicker.Item key={serviceName} title={serviceName} value={serviceName} icon={Icon.Box} />
+          <Form.TagPicker.Item key={serviceName} title={serviceName} value={serviceName} />
         ))}
       </Form.TagPicker>
     </Form>

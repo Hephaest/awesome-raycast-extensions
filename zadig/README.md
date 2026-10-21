@@ -1,32 +1,30 @@
 # Zadig
 
-Search your Zadig workflow runs and environments, and manage sub-environments.
+Search [Zadig](https://koderover.com) workflow runs and environments, and manage sub-environments from Raycast.
 
-It ships two commands, **Search Workflows** and **Search Environments**, and works with any Zadig that serves the OpenAPI. You only need your Zadig domain and an API token.
+![Search Workflows showing a run's repositories and stages](media/search-workflows-1-runs.png)
 
-## Features
+## Commands
 
-- **Search Workflows**: pick a project and a workflow to browse its runs, with each run's status and who started it. The detail pane shows the commits built, the run's choice parameters and its stages. Retry a failed, cancelled or timed-out run, or cancel a running one.
-- **Search Environments**: browse test and production environments, with each environment's status and the services deployed in it. In Helm projects, create a sub-environment from a base environment or add services to a test environment. Restart any service, or delete a test environment.
+- **Search Workflows**: browse a project's custom workflows and their runs, with each run's status, repositories, parameters and stages. Retry a failed, canceled, rejected or timed-out run, or cancel a running one.
+- **Search Environments**: browse test and production environments with their status and deployed services. Restart a service, delete a test environment, and in Helm projects create a sub-environment or add services.
 
-![Search Workflows with a run's commits and stages](metadata/search-workflows-1-runs.png)
+## Setup
 
-## Install
+1. In Zadig, click your account in the upper right corner, choose **Account Settings**, and copy the **API Token**.
+2. In the extension preferences, fill in:
+   - **Domain**: the domain your company serves Zadig from, such as `zadig.example.com`.
+   - **API Token**: the token from step 1.
 
-1. Clone this repository.
-2. In the `zadig` folder, run `npm install`.
-3. Open Raycast, run **Import Extension**, and select the `zadig` folder.
+Every action runs as your Zadig account.
 
-## Sign in
+## Compatibility
 
-1. In Zadig, open **Account Settings** and copy your API token.
-2. In the extension's preferences, enter the token and the domain your company serves Zadig from, such as `zadig.example.com`. The extension always connects over HTTPS.
+Built on the [Zadig v5.0 OpenAPI](https://docs.koderover.com/zadig/en/Zadig%20v5.0/api/usage/).
 
-## Not supported
+## Limitations
 
-- Sleeping and waking environments, because the OpenAPI has no endpoint for them.
-- Job logs, because Zadig returns credentials in cleartext in task data and build logs.
-- Removing services, and creating environments or adding services outside Helm projects, because those OpenAPI endpoints are untested.
-- Starting a new run, approvals and release plans.
-
-Built on the Zadig v4.3 OpenAPI and tested against Zadig v4.14.
+- Starting a new run, approvals and release plans are not supported.
+- Sleeping and waking environments are not supported.
+- Job logs are not shown, because Zadig returns credentials in cleartext in task data and build logs.
+- Creating environments and adding services work only in Helm projects, and removing services is not supported.

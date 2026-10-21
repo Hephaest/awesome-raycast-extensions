@@ -23,7 +23,6 @@ export class ZadigError extends Error {
   }
 }
 
-// NOTE: Always HTTPS, because every request carries the API token.
 export const getBaseUrl = () => {
   const { domain } = getPreferenceValues<Preferences>();
 
@@ -75,7 +74,6 @@ export async function request<T>(path: string, { method = "GET", params, body }:
     throw new Error(isTimeout ? `${baseUrl} did not respond in time` : `Cannot reach ${baseUrl}`, { cause: error });
   }
 
-  // NOTE: Zadig answers a bad token with an empty 401 and some failures with non-JSON, so the body is read as text first.
   const text = await response.text();
 
   if (!response.ok) {
@@ -93,7 +91,6 @@ export async function request<T>(path: string, { method = "GET", params, body }:
 
   const data = parseJson<T>(text);
 
-  // ! A sign-in page from a proxy in front of Zadig lands here, so its body is never echoed back.
   if (data === undefined) {
     throw new ZadigError(response.status, "Zadig returned a response that is not JSON");
   }

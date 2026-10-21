@@ -1,4 +1,4 @@
-import { request } from "./request";
+import { getBaseUrl, request } from "./request";
 
 export type Workflow = {
   workflow_key: string;
@@ -20,7 +20,7 @@ export type WorkflowTask = {
 
 type WorkflowTaskPage = {
   total: number;
-  workflow_tasks: WorkflowTask[];
+  workflow_tasks: WorkflowTask[] | null;
 };
 
 type WorkflowTaskResponse = {
@@ -33,7 +33,10 @@ type WorkflowTaskResponse = {
           | {
               type: string;
               spec?: {
-                repos?: { repo_name: string; branch: string; commit_id: string; commit_message: string }[] | null;
+                // Zadig leaves out the commit fields for a repository built without a pinned commit.
+                repos?:
+                  | { repo_name: string; branch: string; commit_id?: string | null; commit_message?: string | null }[]
+                  | null;
               };
             }[]
           | null;
@@ -44,8 +47,8 @@ type WorkflowTaskResponse = {
 export type WorkflowTaskBuild = {
   repoName: string;
   branch: string;
-  commitId: string;
-  commitMessage: string;
+  commitId?: string;
+  commitMessage?: string;
 };
 
 export type WorkflowTaskDetail = {
@@ -54,13 +57,12 @@ export type WorkflowTaskDetail = {
   builds: WorkflowTaskBuild[];
 };
 
-// TODO(zadig-run-workflow): Start a run from a form built on GET /workflows/custom/:workflowKey/detail.
+// TODO: Start a run from a form built on GET /workflows/custom/:workflowKey/detail.
 
-// NOTE: Only custom workflows have run endpoints in the OpenAPI.
 export async function getWorkflows(projectKey: string) {
-  const { workflows } = await request<{ workflows: Workflow[] }>("/workflows", { params: { projectKey } });
+  const { workflows } = await request<{ workflows: Workflow[] | null }>("/workflows", { params: { projectKey } });
 
-  return workflows.filter(workflow => workflow.type === "custom");
+  return (workflows ?? []).filter(workflow => workflow.type === "custom");
 }
 
 export const getWorkflowTasks = (projectKey: string, workflowKey: string, pageNum: number, pageSize: number) =>
@@ -71,32 +73,39 @@ export const getWorkflowTasks = (projectKey: string, workflowKey: string, pageNu
 export const cancelWorkflowTask = (workflowKey: string, taskId: number) =>
   request<void>("/workflows/custom/task", { method: "DELETE", params: { workflowKey, taskId } });
 
-// Zadig reruns the same task in place rather than creating a new one.
 export const retryWorkflowTask = (projectKey: string, workflowKey: string, taskId: number) =>
   request<void>(`/workflows/custom/${encodeURIComponent(workflowKey)}/task/${taskId}`, {
     method: "POST",
     params: { projectKey },
   });
 
-// ! The response carries repository OAuth tokens in cleartext, so only the displayed fields leave this function and reach Raycast's cache.
 export async function getWorkflowTask(workflowKey: string, taskId: number): Promise<WorkflowTaskDetail> {
   const task = await request<WorkflowTaskResponse>("/workflows/custom/task", { params: { workflowKey, taskId } });
   const stages = task.stages ?? [];
+  const builds = stages
+    .flatMap(stage => stage.jobs ?? [])
+    .filter(job => job.type === "zadig-build")
+    .flatMap(job =>
+      (job.spec?.repos ?? []).map(repo => ({
+        repoName: repo.repo_name,
+        branch: repo.branch,
+        commitId: repo.commit_id ?? undefined,
+        commitMessage: repo.commit_message ?? undefined,
+      })),
+    );
 
   return {
-    // Choice parameters hold picked options such as the target environment, while free-text parameters may hold secrets.
+    // NOTE: Choice parameters hold picked options such as the target environment, while free-text parameters may hold secrets.
     choices: (task.params ?? []).filter(param => param.type === "choice").map(({ name, value }) => ({ name, value })),
     stages: stages.map(({ name, status }) => ({ name, status })),
-    builds: stages
-      .flatMap(stage => stage.jobs ?? [])
-      .filter(job => job.type === "zadig-build")
-      .flatMap(job =>
-        (job.spec?.repos ?? []).map(repo => ({
-          repoName: repo.repo_name,
-          branch: repo.branch,
-          commitId: repo.commit_id,
-          commitMessage: repo.commit_message,
-        })),
-      ),
+    // NOTE: Several build jobs often build the same commit for different services, so each commit is listed once.
+    builds: builds.filter(
+      (build, index) =>
+        builds.findIndex(({ repoName, commitId }) => repoName === build.repoName && commitId === build.commitId) ===
+        index,
+    ),
   };
 }
+
+export const getWorkflowTaskUrl = (projectKey: string, workflowKey: string, taskId: number) =>
+  `${getBaseUrl()}/v1/projects/detail/${encodeURIComponent(projectKey)}/pipelines/custom/${encodeURIComponent(workflowKey)}/${taskId}?${new URLSearchParams({ status: "", id: "", display_name: workflowKey })}`;

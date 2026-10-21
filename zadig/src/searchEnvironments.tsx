@@ -1,14 +1,15 @@
-import { Action, ActionPanel, Alert, confirmAlert, Icon, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Alert, confirmAlert, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
 import { useCachedPromise, useFrecencySorting } from "@raycast/utils";
-import { deleteEnvironment, getEnvironments, type Environment } from "./api/environments";
-import { ZadigError } from "./api/request";
+import { useState } from "react";
+import { deleteEnvironment, getEnvironments, getEnvironmentUrl, type Environment } from "./api/environments";
+import { getBaseUrl, ZadigError } from "./api/request";
 import AddServicesForm from "./components/AddServicesForm";
 import CreateSubEnvironmentForm from "./components/CreateSubEnvironmentForm";
 import EnvironmentDetail from "./components/EnvironmentDetail";
 import ProjectDropdown from "./components/ProjectDropdown";
 import RestartServiceSubmenu from "./components/RestartServiceSubmenu";
 import { useProjects } from "./hooks/useProjects";
-import { getEnvironmentUrl } from "./webUrls";
+import { getStatusIcon } from "./utils/status";
 
 // Users without production access get a 403, which hides the section rather than failing the command.
 async function getEnvironmentsUnlessForbidden(projectKey: string, production: boolean) {
@@ -28,30 +29,43 @@ export default function SearchEnvironments() {
   const projectKey = project?.project_key ?? "";
   // NOTE: Creating environments and adding services is only verified on Helm projects, so other project types do not offer it.
   const isHelmProject = project?.deploy_type === "helm";
+
   const {
     data: testEnvironments = [],
     isLoading: isLoadingTestEnvironments,
     revalidate: revalidateTestEnvironments,
   } = useCachedPromise(getEnvironments, [projectKey, false], { execute: Boolean(projectKey) });
-  const { data: productionEnvironments, isLoading: isLoadingProductionEnvironments } = useCachedPromise(
-    getEnvironmentsUnlessForbidden,
-    [projectKey, true],
-    { execute: Boolean(projectKey) },
-  );
+
+  const {
+    data: productionEnvironments,
+    isLoading: isLoadingProductionEnvironments,
+    revalidate: revalidateProductionEnvironments,
+  } = useCachedPromise(getEnvironmentsUnlessForbidden, [projectKey, true], { execute: Boolean(projectKey) });
+
+  const [refreshCount, setRefreshCount] = useState(0);
+  const isLoading = isLoadingProjects || isLoadingTestEnvironments || isLoadingProductionEnvironments;
   const getFrecencyKey = (environment: Environment) => `${projectKey}/${environment.env_key}`;
+
   const { data: sortedTestEnvironments, visitItem: visitTestEnvironment } = useFrecencySorting(testEnvironments, {
     namespace: "environments",
     key: getFrecencyKey,
   });
+
   const { data: sortedProductionEnvironments, visitItem: visitProductionEnvironment } = useFrecencySorting(
     productionEnvironments,
     { namespace: "environments", key: getFrecencyKey },
   );
 
+  function refresh() {
+    revalidateTestEnvironments();
+    revalidateProductionEnvironments();
+    setRefreshCount(count => count + 1);
+  }
+
   async function confirmDelete(environment: Environment) {
     const isConfirmed = await confirmAlert({
       title: `Delete ${environment.env_key}?`,
-      message: `This deletes ${environment.env_key} with its namespace ${environment.namespace} and every workload in it. It cannot be undone.`,
+      message: `This deletes ${environment.env_key} on ${getBaseUrl()} and its services in namespace ${environment.namespace}. It cannot be undone.`,
       primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
     });
 
@@ -65,7 +79,7 @@ export default function SearchEnvironments() {
       await deleteEnvironment(projectKey, environment);
       toast.style = Toast.Style.Success;
       toast.title = `Deleted ${environment.env_key}`;
-      revalidateTestEnvironments();
+      refresh();
     } catch (error) {
       toast.style = Toast.Style.Failure;
       toast.title = `Failed to delete ${environment.env_key}`;
@@ -76,10 +90,10 @@ export default function SearchEnvironments() {
   const renderEnvironment = (environment: Environment, visitItem: (environment: Environment) => Promise<void>) => (
     <List.Item
       key={environment.env_key}
-      icon={Icon.Layers}
+      icon={{ value: getStatusIcon(environment.status), tooltip: environment.status }}
       title={environment.env_key}
       keywords={[environment.namespace, environment.status, environment.update_by]}
-      detail={<EnvironmentDetail projectKey={projectKey} environment={environment} />}
+      detail={<EnvironmentDetail key={refreshCount} projectKey={projectKey} environment={environment} />}
       actions={
         <ActionPanel>
           <ActionPanel.Section>
@@ -88,16 +102,23 @@ export default function SearchEnvironments() {
               onOpen={() => visitItem(environment)}
             />
             <Action.CopyToClipboard title="Copy Environment Name" content={environment.env_key} />
+            <Action
+              title="Refresh"
+              icon={Icon.RotateClockwise}
+              shortcut={Keyboard.Shortcut.Common.Refresh}
+              onAction={refresh}
+            />
             {isHelmProject && testEnvironments.length > 0 && (
               <Action.Push
                 title="Create Sub-Environment"
                 icon={Icon.Plus}
+                shortcut={Keyboard.Shortcut.Common.New}
                 target={
                   <CreateSubEnvironmentForm
                     projectKey={projectKey}
                     testEnvironments={testEnvironments}
                     defaultBaseEnvironmentKey={environment.production ? undefined : environment.env_key}
-                    onCreate={revalidateTestEnvironments}
+                    onCreate={refresh}
                   />
                 }
               />
@@ -113,12 +134,12 @@ export default function SearchEnvironments() {
                     projectKey={projectKey}
                     environment={environment}
                     sourceEnvironments={testEnvironments.filter(({ env_key }) => env_key !== environment.env_key)}
-                    onAdd={revalidateTestEnvironments}
+                    onAdd={refresh}
                   />
                 }
               />
             )}
-            <RestartServiceSubmenu projectKey={projectKey} environment={environment} />
+            <RestartServiceSubmenu key={refreshCount} projectKey={projectKey} environment={environment} />
           </ActionPanel.Section>
           {!environment.production && (
             <ActionPanel.Section title="Danger Zone">
@@ -126,6 +147,7 @@ export default function SearchEnvironments() {
                 title="Delete Environment"
                 icon={Icon.Trash}
                 style={Action.Style.Destructive}
+                shortcut={Keyboard.Shortcut.Common.Remove}
                 onAction={() => confirmDelete(environment)}
               />
             </ActionPanel.Section>
@@ -138,10 +160,11 @@ export default function SearchEnvironments() {
   return (
     <List
       isShowingDetail
-      isLoading={isLoadingProjects || isLoadingTestEnvironments || isLoadingProductionEnvironments}
+      isLoading={isLoading}
       searchBarPlaceholder="Search environments by name, status or updater"
       searchBarAccessory={<ProjectDropdown projects={projects} value={project?.project_key} onChange={setProjectKey} />}
     >
+      {!isLoading && <List.EmptyView icon={Icon.Layers} title="No Environments Found" />}
       <List.Section title="Test">
         {sortedTestEnvironments.map(environment => renderEnvironment(environment, visitTestEnvironment))}
       </List.Section>

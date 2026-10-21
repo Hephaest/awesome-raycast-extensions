@@ -8,18 +8,19 @@ export type Project = {
 
 type ProjectPage = {
   total: number;
-  projects: Project[];
+  projects: Project[] | null;
 };
 
-// Pages through the list at the server's default page size until every project is loaded.
 export async function getAllProjects() {
   const projects: Project[] = [];
 
   for (let pageNum = 1; ; pageNum++) {
     const page = await request<ProjectPage>("/projects/project", { params: { pageNum } });
-    projects.push(...page.projects);
+    const pageProjects = page.projects ?? [];
 
-    if (page.projects.length === 0 || projects.length >= page.total) {
+    projects.push(...pageProjects);
+
+    if (pageProjects.length === 0 || projects.length >= page.total) {
       return projects;
     }
   }

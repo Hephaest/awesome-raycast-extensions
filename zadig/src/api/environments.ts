@@ -1,4 +1,4 @@
-import { request } from "./request";
+import { getBaseUrl, request } from "./request";
 
 export type Environment = {
   env_key: string;
@@ -34,10 +34,9 @@ const getEnvironmentsPath = (production: boolean) => (production ? "/environment
 const getEnvironmentPath = (environmentKey: string, production: boolean) =>
   `${getEnvironmentsPath(production)}/${encodeURIComponent(environmentKey)}`;
 
-export const getEnvironments = (projectKey: string, production: boolean) =>
-  request<Environment[]>(getEnvironmentsPath(production), { params: { projectKey } });
+export const getEnvironments = async (projectKey: string, production: boolean) =>
+  (await request<Environment[] | null>(getEnvironmentsPath(production), { params: { projectKey } })) ?? [];
 
-// ! Environment variables in the response may hold secrets, so only the displayed fields leave this function and reach Raycast's cache.
 export async function getEnvironmentServices(
   projectKey: string,
   environmentKey: string,
@@ -71,7 +70,7 @@ export const createHelmSubEnvironment = (
     },
   });
 
-// Zadig accepts the create before the environment exists, so services can only be added once it is ready.
+// NOTE: Zadig accepts the create before the environment exists, so services can only be added once it is ready.
 export async function waitForEnvironmentToBeReady(projectKey: string, environmentKey: string) {
   for (let attempt = 1; attempt <= ENVIRONMENT_READY_POLL_ATTEMPTS; attempt++) {
     await new Promise(resolve => setTimeout(resolve, ENVIRONMENT_READY_POLL_MILLISECONDS));
@@ -106,9 +105,11 @@ export const restartService = (projectKey: string, environment: Environment, ser
     { method: "POST", params: { projectKey } },
   );
 
-// `isDelete` also removes the Kubernetes namespace and its workloads.
 export const deleteEnvironment = (projectKey: string, environment: Environment) =>
   request<void>(getEnvironmentPath(environment.env_key, environment.production), {
     method: "DELETE",
     params: { projectKey, isDelete: true },
   });
+
+export const getEnvironmentUrl = (projectKey: string, environmentKey: string) =>
+  `${getBaseUrl()}/v1/projects/detail/${encodeURIComponent(projectKey)}/envs/detail?${new URLSearchParams({ envName: environmentKey })}`;

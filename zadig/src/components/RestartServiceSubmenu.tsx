@@ -44,7 +44,7 @@ export default function RestartServiceSubmenu({ projectKey, environment }: Resta
 
   return (
     <ActionPanel.Submenu
-      title="Restart Service"
+      title="Restart Service…"
       icon={Icon.RotateClockwise}
       isLoading={isLoading}
       onOpen={() => setHasOpened(true)}

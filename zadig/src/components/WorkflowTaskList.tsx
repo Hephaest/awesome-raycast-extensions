@@ -1,21 +1,20 @@
 import { Action, ActionPanel, Alert, confirmAlert, Icon, List, showToast, Toast, Keyboard } from "@raycast/api";
-import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
+import { useCachedPromise } from "@raycast/utils";
+import { useState } from "react";
 import {
   cancelWorkflowTask,
   getWorkflowTasks,
+  getWorkflowTaskUrl,
   retryWorkflowTask,
   type Workflow,
   type WorkflowTask,
 } from "../api/workflows";
-import { getStatusColor } from "../statusColor";
-import { getWorkflowTaskUrl } from "../webUrls";
+import { getStatusIcon } from "../utils/status";
 import WorkflowTaskDetail from "./WorkflowTaskDetail";
 
-// Matches the default page size of Zadig's task list endpoint.
 const PAGE_SIZE = 50;
-
 const CANCELLABLE_STATUSES = ["created", "running", "waiting"];
-const RETRYABLE_STATUSES = ["failed", "cancelled", "timeout"];
+const RETRYABLE_STATUSES = ["failed", "cancelled", "timeout", "reject"];
 
 type WorkflowTaskListProps = {
   projectKey: string;
@@ -33,10 +32,19 @@ export default function WorkflowTaskList({ projectKey, workflow }: WorkflowTaskL
       async ({ page }: { page: number }) => {
         const { total, workflow_tasks } = await getWorkflowTasks(projectKey, workflowKey, page + 1, PAGE_SIZE);
 
-        return { data: workflow_tasks, hasMore: (page + 1) * PAGE_SIZE < total };
+        return { data: workflow_tasks ?? [], hasMore: (page + 1) * PAGE_SIZE < total };
       },
     [projectKey, workflow.workflow_key],
   );
+
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  const uniqueTasks = [...new Map(tasks?.map(task => [task.task_id, task])).values()];
+
+  function refresh() {
+    revalidate();
+    setRefreshCount(count => count + 1);
+  }
 
   async function confirmCancel(task: WorkflowTask) {
     const isConfirmed = await confirmAlert({
@@ -50,12 +58,12 @@ export default function WorkflowTaskList({ projectKey, workflow }: WorkflowTaskL
       return;
     }
 
-    const toast = await showToast({ style: Toast.Style.Animated, title: `Cancelling run #${task.task_id}` });
+    const toast = await showToast({ style: Toast.Style.Animated, title: `Canceling run #${task.task_id}` });
 
     try {
       await cancelWorkflowTask(task.workflow_key, task.task_id);
       toast.style = Toast.Style.Success;
-      toast.title = `Cancelled run #${task.task_id}`;
+      toast.title = `Canceled run #${task.task_id}`;
       revalidate();
     } catch (error) {
       toast.style = Toast.Style.Failure;
@@ -64,11 +72,10 @@ export default function WorkflowTaskList({ projectKey, workflow }: WorkflowTaskL
     }
   }
 
-  // A retry runs every stage again, deploys included, so it is confirmed first.
   async function confirmRetry(task: WorkflowTask) {
     const isConfirmed = await confirmAlert({
       title: `Retry run #${task.task_id}?`,
-      message: `This runs ${workflow.workflow_name} #${task.task_id} again with the same inputs, deploy stages included.`,
+      message: `This reruns the jobs of ${workflow.workflow_name} #${task.task_id} that did not pass, with the same inputs, deploy jobs included.`,
       primaryAction: { title: "Retry Run" },
     });
 
@@ -98,21 +105,17 @@ export default function WorkflowTaskList({ projectKey, workflow }: WorkflowTaskL
       pagination={pagination}
       searchBarPlaceholder="Filter loaded runs by number, creator or status"
     >
-      {tasks?.map(task => {
+      {!isLoading && <List.EmptyView icon={Icon.Boat} title="No Runs Found" />}
+      {uniqueTasks.map(task => {
         const taskUrl = getWorkflowTaskUrl(projectKey, task.workflow_key, task.task_id);
 
         return (
           <List.Item
             key={task.task_id}
-            icon={Icon.Boat}
-            title={String(task.task_id)}
+            icon={{ value: getStatusIcon(task.status), tooltip: task.status }}
+            title={`#${task.task_id}`}
             keywords={[task.task_creator, task.status]}
-            accessories={[
-              { tag: { value: task.status, color: getStatusColor(task.status) } },
-              { icon: getAvatarIcon(task.task_creator), tooltip: task.task_creator },
-            ]}
-            // Retry reuses the task id, so the status in the key reloads the detail for the new attempt.
-            detail={<WorkflowTaskDetail key={`${task.task_id}-${task.status}`} task={task} />}
+            detail={<WorkflowTaskDetail key={`${task.task_id}-${task.status}-${refreshCount}`} task={task} />}
             actions={
               <ActionPanel>
                 <ActionPanel.Section>
@@ -122,7 +125,7 @@ export default function WorkflowTaskList({ projectKey, workflow }: WorkflowTaskL
                     title="Refresh"
                     icon={Icon.RotateClockwise}
                     shortcut={Keyboard.Shortcut.Common.Refresh}
-                    onAction={revalidate}
+                    onAction={refresh}
                   />
                 </ActionPanel.Section>
                 <ActionPanel.Section title="Operations">
