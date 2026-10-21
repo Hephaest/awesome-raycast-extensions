@@ -3,7 +3,7 @@ A collection of custom extensions designed to streamline your working workflows 
 
 > **Disclaimer:**
 >
-> These Raycast extensions were created by other developers. Full credit goes to the original authors for their foundational work.
+> The Jira and GitHub extensions were created by other developers. Full credit goes to the original authors for their foundational work.
 >
 > My contributions focus on adding new features and optimizing the extensions for better performance and user experience.
 
@@ -14,10 +14,13 @@ Browse your saved Jira filters, with each issue's parent shown on the list. See 
 ### GitHub
 See the pull requests waiting on you from the menu bar, and search your review requests. See [github/README.md](github/README.md).
 
+### Zadig
+Search your Zadig workflow runs and environments, and manage sub-environments. See [zadig/README.md](zadig/README.md).
+
 ## 🛠 Installation
 1. Clone this repo to your desktop.
 2. Open Reycast and type "Import Extensions."
-3. Open your cloned repository and select the specific extension folder (not the root folder). For example, choose either the `jira` or `github` folder.
+3. Open your cloned repository and select the specific extension folder (not the root folder). For example, choose the `jira`, `github` or `zadig` folder.
 4. Open the Reycast Extension Settings window.
 5. Configure the necessary settings for the extension, such as your Personal Access Token.
 
