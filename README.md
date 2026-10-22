@@ -17,10 +17,13 @@ See the pull requests waiting on you from the menu bar, and search your review r
 ### Zadig
 Search your Zadig workflow runs and environments, and manage sub-environments. See [zadig/README.md](zadig/README.md).
 
+### English Dictionary
+Look up English words in Wiktionary, Collins and Merriam-Webster, and hear them pronounced. See [english-dictionary/README.md](english-dictionary/README.md).
+
 ## 🛠 Installation
 1. Clone this repo to your desktop.
 2. Open Reycast and type "Import Extensions."
-3. Open your cloned repository and select the specific extension folder (not the root folder). For example, choose the `jira`, `github` or `zadig` folder.
+3. Open your cloned repository and select the specific extension folder (not the root folder). For example, choose the `jira`, `github`, `zadig` or `english-dictionary` folder.
 4. Open the Reycast Extension Settings window.
 5. Configure the necessary settings for the extension, such as your Personal Access Token.
 

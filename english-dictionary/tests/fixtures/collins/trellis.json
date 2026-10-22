@@ -1,0 +1,9 @@
+{
+  "dictionaryCode": "english",
+  "entryId": "trellis_2",
+  "entryLabel": "trellis",
+  "entryUrl": "http://api.collinsdictionary.com/api/v1/dictionaries/english/entries/trellis_2",
+  "entryContent": "<div class=\"entry_container\">\n<div class=\"entry lang_en-us\" id=\"trellis_2\">\n<div class=\"hwd_sound\">\n<h1 class=\"hwd\">trellis</h1>\n<span class=\"lbfreq\">●○○</span>\n<span class=\"pron\">ˈtrɛlɪs\n<a class=\"playback\" href=\"#\" title=\"Pronunciation for trellis\"><img class=\"sound\" src=\"/external/images/soundS.png\" alt=\"\"></a>\n<audio><source src=\"https://api.collinsdictionary.com/media/sounds/fixture/trellis_us_01.mp3\" type=\"audio/mpeg\">Your browser does not support the audio element.</audio>\n</span>\n</div>\n<div class=\"hom\">\n<span class=\"gramGrp\"><span class=\"pos\">noun</span></span>\n<div class=\"sense\">\n<span class=\"sensenum\">1. </span>\n<span class=\"def\">a light frame of crossed slats that a climbing plant is trained along</span>\n<span class=\"cit type-example\"><span class=\"quote\">The roses had swallowed the trellis by the end of the wet summer.</span></span>\n</div>\n</div>\n<div class=\"etym\">\n<span class=\"lbl\">[C15:</span> invented for this fixture from an older word for a woven screen<span class=\"lbl\">]</span>\n</div>\n</div>\n</div>",
+  "format": "html",
+  "topics": []
+}

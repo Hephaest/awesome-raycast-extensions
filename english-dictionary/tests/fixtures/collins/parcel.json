@@ -1,0 +1,9 @@
+{
+  "dictionaryCode": "english-learner",
+  "entryId": "parcel_4",
+  "entryLabel": "parcel",
+  "entryUrl": "http://api.collinsdictionary.com/api/v1/dictionaries/english-learner/entries/parcel_4",
+  "entryContent": "<div class=\"entry_container\">\n<div class=\"entry lang_en-gb\" id=\"parcel_4\">\n<h1 class=\"hwd\">parcel</h1>\n<span class=\"pron\">ˈpɑːsəl\n<a class=\"playback\" href=\"#\" title=\"Pronunciation for parcel\"><img class=\"sound\" src=\"/external/images/soundS.png\" alt=\"\"></a>\n<audio><source src=\"https://api.collinsdictionary.com/media/sounds/fixture/parcel_gb_01.mp3\" type=\"audio/mpeg\">Your browser does not support the audio element.</audio>\n</span>\n<div class=\"definitionBlock\">\n<p class=\"definitionText\">A parcel is something wrapped in stiff paper and tied with string so that it can travel by post.</p>\n<p class=\"exampleText\">He left the parcel on the ledger desk and went back out into the rain.</p>\n</div>\n</div>\n</div>",
+  "format": "html",
+  "topics": []
+}

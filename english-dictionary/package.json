@@ -1,0 +1,159 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "english-dictionary",
+  "title": "English Dictionary",
+  "description": "Look up English words in Wiktionary, Collins and Merriam-Webster, and hear them pronounced.",
+  "icon": "icon.png",
+  "author": "philly_cai",
+  "platforms": [
+    "macOS"
+  ],
+  "categories": [
+    "Productivity",
+    "Web"
+  ],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "searchWord",
+      "title": "Search Word",
+      "subtitle": "English Dictionary",
+      "description": "Look up a word or phrase in Wiktionary, Collins or Merriam-Webster.",
+      "mode": "view",
+      "keywords": [
+        "dictionary",
+        "define",
+        "meaning",
+        "pronunciation",
+        "vocabulary"
+      ],
+      "arguments": [
+        {
+          "name": "word",
+          "type": "text",
+          "placeholder": "Word",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "defineSelectedWord",
+      "title": "Define Selected Word",
+      "subtitle": "English Dictionary",
+      "description": "Open the dictionary entry for the text selected in the frontmost app.",
+      "mode": "no-view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "defaultSource",
+      "title": "Default Dictionary",
+      "description": "The dictionary every lookup opens in. ⌘P switches until Raycast returns to its root search.",
+      "type": "dropdown",
+      "required": false,
+      "default": "wiktionary",
+      "data": [
+        {
+          "title": "Wiktionary",
+          "value": "wiktionary"
+        },
+        {
+          "title": "Collins",
+          "value": "collins"
+        },
+        {
+          "title": "Merriam-Webster",
+          "value": "merriam-webster"
+        }
+      ]
+    },
+    {
+      "name": "merriamWebsterApiKey",
+      "title": "Merriam-Webster API Key",
+      "description": "Free key from dictionaryapi.com. Leave empty to hide Merriam-Webster.",
+      "type": "password",
+      "required": false,
+      "placeholder": "Paste your key"
+    },
+    {
+      "name": "merriamWebsterDictionary",
+      "title": "Merriam-Webster Dictionary",
+      "description": "Which Merriam-Webster dictionary your key covers.",
+      "type": "dropdown",
+      "required": false,
+      "default": "learners",
+      "data": [
+        {
+          "title": "Merriam-Webster's Learner's Dictionary",
+          "value": "learners"
+        },
+        {
+          "title": "Merriam-Webster's Collegiate® Dictionary",
+          "value": "collegiate"
+        }
+      ]
+    },
+    {
+      "name": "collinsApiKey",
+      "title": "Collins API Key",
+      "description": "Key supplied by Collins for api.collinsdictionary.com. Leave empty to hide Collins.",
+      "type": "password",
+      "required": false,
+      "placeholder": "Paste your key"
+    },
+    {
+      "name": "collinsDictionary",
+      "title": "Collins Dictionary",
+      "description": "Which Collins dictionary your key covers.",
+      "type": "dropdown",
+      "required": false,
+      "default": "english",
+      "data": [
+        {
+          "title": "Collins English Dictionary",
+          "value": "english"
+        },
+        {
+          "title": "Collins COBUILD Advanced British",
+          "value": "english-learner"
+        },
+        {
+          "title": "Collins COBUILD Advanced American",
+          "value": "american-learner"
+        }
+      ]
+    },
+    {
+      "name": "speakWhenNoRecording",
+      "title": "Pronunciation",
+      "label": "Use the macOS voice when a dictionary has no recording",
+      "description": "Speaks the word with the system voice instead of staying silent.",
+      "type": "checkbox",
+      "required": false,
+      "default": false
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^2.8.2",
+    "@raycast/utils": "^2.3.3",
+    "cheerio": "^1.2.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.2.0",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.17",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "publish": "npx @raycast/api@latest publish",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}
