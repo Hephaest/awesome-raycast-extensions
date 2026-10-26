@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        extension: [jira, github, zadig, english-dictionary]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.extension }}/package-lock.json
+      - name: Install
+        working-directory: ${{ matrix.extension }}
+        run: npm ci
+      - name: Build
+        working-directory: ${{ matrix.extension }}
+        # With an output path the Raycast CLI skips its call to the running app, so it builds on a runner without Raycast.
+        run: npx ray build -e dist -o dist
+      - name: Package
+        working-directory: ${{ matrix.extension }}
+        run: |
+          mv dist ${{ matrix.extension }}
+          if [ -f LICENSE ]; then cp LICENSE ${{ matrix.extension }}/LICENSE; else cp ../LICENSE ${{ matrix.extension }}/LICENSE; fi
+          zip -r ../${{ matrix.extension }}.zip ${{ matrix.extension }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.extension }}
+          path: ${{ matrix.extension }}.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: zips
+          merge-multiple: true
+      # Pinned to a commit, not a tag: in CVE-2025-30066 a moved tag ran malicious code in workflows.
+      # Refer to: https://www.cve.org/CVERecord?id=CVE-2025-30066
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: zips/*.zip
+          generate_release_notes: true
