@@ -2,8 +2,8 @@
 /**
  * The design canvas every preview is drawn on: 960 by 600 design px by default, scaled by --k to --screen-w and
  * placed in the page's flow. A set may override --canvas-h; the aspect ratio follows it. Windows inside it sit at
- * design coordinates. Below 1150 wide or 700 tall the canvas flows at full width, with fixed windows scaled
- * separately and single-column content reflowed.
+ * design coordinates. Below 1150 wide or 700 tall the canvas flows at full width and every window keeps its desktop
+ * layout: a lone window scales in WindowFit, and a scene of several windows scales as one 960 by 600 unit.
  * The windows are decoration for assistive technology unless the canvas holds real controls.
  */
 interface Props {
@@ -57,12 +57,8 @@ const { id, appearance, class: className } = Astro.props;
         transform: none;
       }
 
-      .canvas[data-scene='words'] {
-        inline-size: min(100%, 840px);
-      }
-
-      /* A desktop card keeps its 960 by 600 composition and scales as one unit to the container's width. */
-      .canvas:is([data-scene='reviews'], [data-scene='handover']) {
+      /* A scene of several windows keeps its 960 by 600 composition and scales as one unit to the container's width. */
+      .canvas:is([data-scene='words'], [data-scene='reviews'], [data-scene='handover']) {
         inline-size: min(100%, 960px);
         aspect-ratio: 960 / 600;
         container-type: inline-size;
@@ -70,16 +66,23 @@ const { id, appearance, class: className } = Astro.props;
         overflow-clip-margin: 60px;
       }
 
-      .canvas:is([data-scene='reviews'], [data-scene='handover']) > .canvas__stage {
+      .canvas:is([data-scene='words'], [data-scene='reviews'], [data-scene='handover']) > .canvas__stage {
         position: absolute;
         inline-size: 960px;
         block-size: 600px;
+        /* WebKit computes tan(atan2()) wrong for cqw, so engines with typed division take the division below. */
         transform: scale(tan(atan2(100cqw, 960px)));
+      }
+
+      @supports (scale: calc(1px / 1px)) {
+        .canvas:is([data-scene='words'], [data-scene='reviews'], [data-scene='handover']) > .canvas__stage {
+          transform: scale(calc(100cqw / 960px));
+        }
       }
 
       /* Safari has no overflow-clip-margin (WebKit bug 236153) and would cut the card's shadow at the edge, so it does not clip. */
       @supports not (overflow-clip-margin: 60px) {
-        .canvas:is([data-scene='reviews'], [data-scene='handover']) {
+        .canvas:is([data-scene='words'], [data-scene='reviews'], [data-scene='handover']) {
           overflow: visible;
         }
       }

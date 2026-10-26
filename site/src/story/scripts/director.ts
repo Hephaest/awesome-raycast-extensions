@@ -159,7 +159,9 @@ function measureDay() {
   day.setAttribute('data-day-measured', '');
   for (const card of day.querySelectorAll<HTMLElement>('.desktop-card__screen')) {
     const item = card.querySelector<HTMLElement>('[data-menubar-item]');
-    if (item) card.style.setProperty('--menubar-github-end', `${card.offsetWidth - item.offsetLeft - item.offsetWidth}px`);
+    if (!item) continue;
+    card.style.setProperty('--menubar-github-start', `${item.offsetLeft}px`);
+    card.style.setProperty('--menubar-github-end', `${card.offsetWidth - item.offsetLeft - item.offsetWidth}px`);
   }
 }
 

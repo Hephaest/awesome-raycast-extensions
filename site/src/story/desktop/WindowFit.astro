@@ -42,8 +42,15 @@ const { width, height } = Astro.props;
         inset-inline-start: 0;
         inline-size: var(--window-width);
         aspect-ratio: var(--window-ratio);
+        /* WebKit computes tan(atan2()) wrong for cqw, so engines with typed division take the division below. */
         transform: scale(tan(atan2(100cqw, var(--window-width))));
         transform-origin: 0 0;
+      }
+
+      @supports (scale: calc(1px / 1px)) {
+        .window-fit__stage {
+          transform: scale(calc(100cqw / var(--window-width)));
+        }
       }
 
       .window-fit .window-fit__stage > :is(.rc-window, .browser-frame) { inset: 0; }

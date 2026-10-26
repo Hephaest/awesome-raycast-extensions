@@ -1,5 +1,6 @@
 ---
 import Window from '../mocks/raycast/Window.astro';
+import WindowFit from '../desktop/WindowFit.astro';
 import StoryCanvas from '../desktop/StoryCanvas.astro';
 import SearchBar from '../mocks/raycast/SearchBar.astro';
 import ActionBar from '../mocks/raycast/ActionBar.astro';
@@ -24,7 +25,8 @@ const byFolder = new Map(extensions.map((extension) => [extension.folder, extens
 
 <StoryCanvas id="hero" appearance="light">
 <div class="hero-set">
-  <Window id="hero" class="hero-set__window" reflow>
+  <WindowFit width={750} height={475}>
+  <Window id="hero" class="hero-set__window">
     <SearchBar slot="search" placeholder="Search for apps and commands..." back={false} />
     <List>
       <Section title="Favorites" />
@@ -42,6 +44,7 @@ const byFolder = new Map(extensions.map((extension) => [extension.folder, extens
     </List>
     <ActionBar slot="footer" root action="Open Command" />
   </Window>
+  </WindowFit>
 </div>
 </StoryCanvas>
 
@@ -68,6 +71,7 @@ const byFolder = new Map(extensions.map((extension) => [extension.folder, extens
       }
     }
 
+    /* Stacked, the window keeps its desktop layout and WindowFit scales it to the column. */
     @media (width < 1150px), (height < 700px) {
       .hero-set {
         position: relative;

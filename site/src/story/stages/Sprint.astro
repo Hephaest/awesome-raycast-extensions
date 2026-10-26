@@ -1,5 +1,6 @@
 ---
 import Window from '../mocks/raycast/Window.astro';
+import WindowFit from '../desktop/WindowFit.astro';
 import SearchBar from '../mocks/raycast/SearchBar.astro';
 import ActionBar from '../mocks/raycast/ActionBar.astro';
 import List from '../mocks/raycast/List.astro';
@@ -42,7 +43,8 @@ const ticketPriority = priorities[ticket.priority];
 ---
 
 <div class="sprint-stage">
-  <Window id="sprint" class="sprint-stage__window" reflow>
+  <WindowFit width={750} height={475}>
+  <Window id="sprint" class="sprint-stage__window">
     <div slot="search" class="sprint-stage__stack">
       <div class="rc-search" data-layer="root-search">
         <div class="rc-search__field"><span class="sprint-root__query">my fi</span><span class="sprint-root__caret"></span></div>
@@ -123,6 +125,7 @@ const ticketPriority = priorities[ticket.priority];
     <Keystroke slot="overlay" name="down" keys={[{ key: '↓', id: 'sprint-down' }]} />
     <Keystroke slot="overlay" name="return" keys={[{ key: '↵', id: 'sprint-return' }]} />
   </Window>
+  </WindowFit>
 </div>
 
 <style is:global>
@@ -146,40 +149,12 @@ const ticketPriority = priorities[ticket.priority];
       grid-template-columns: minmax(0, 1fr);
     }
 
-    /*
-     * Stacked mode: the window flows at full width and content height, so the detail joins the flow,
-     * and stacks its metadata under the text.
-     */
+    /* Stacked, the window keeps its desktop layout and WindowFit scales it to the column. */
     @media (width < 1150px), (height < 700px) {
       .sprint-stage {
         position: relative;
         inset: auto;
       }
-
-      .sprint-stage .sprint-stage__window {
-        position: relative;
-        inset: auto;
-        inline-size: 100%;
-        block-size: auto;
-      }
-
-      .sprint-stage .rc-window__body {
-        max-block-size: none;
-      }
-
-      .sprint-stage .sprint-issue {
-        position: relative;
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .sprint-stage .sprint-issue__meta {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        padding-block-start: 12px;
-        border-inline-start: 0;
-        border-block-start: 1px solid var(--app-line);
-      }
-
-      .sprint-stage .sprint-issue__meta dd { white-space: normal; overflow-wrap: anywhere; }
     }
 
     .sprint-stage .rc-window > *,

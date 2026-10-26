@@ -6,15 +6,14 @@
  */
 interface Props {
   class?: string;
-  reflow?: boolean;
   /** A name the stage script can find the window by. */
   id?: string;
 }
 
-const { class: className, id, reflow = false } = Astro.props;
+const { class: className, id } = Astro.props;
 ---
 
-<div class:list={['rc-window', reflow && 'rc-window--reflow', className]} data-window={id}>
+<div class:list={['rc-window', className]} data-window={id}>
   <slot name="search" />
   <div class="rc-window__body">
     <slot />
@@ -63,26 +62,6 @@ const { class: className, id, reflow = false } = Astro.props;
       position: relative;
       min-block-size: 0;
       overflow: clip;
-    }
-
-    /* Only single-column content reflows; split windows keep their design size inside WindowFit. */
-    @media (width < 1150px), (height < 700px) {
-      .rc-window--reflow {
-        position: relative;
-        inset: auto;
-        inline-size: 100%;
-        block-size: auto;
-        min-block-size: 240px;
-      }
-
-      .rc-window--reflow .rc-actionbar { flex-wrap: wrap; block-size: auto; min-block-size: 52px; }
-      .rc-window--reflow .rc-actionbar__actions { margin-inline-start: auto; }
-      .rc-window--reflow .rc-row { flex-wrap: wrap; block-size: auto; min-block-size: 40px; padding-block: 8px; white-space: normal; }
-      .rc-window--reflow .rc-row__title { flex: 1; overflow: visible; }
-      .rc-window--reflow .rc-row__subtitle { overflow: visible; }
-      .rc-window--reflow .rc-row__accessories { flex-wrap: wrap; max-inline-size: 100%; }
-      .rc-window--reflow .rc-search { flex-wrap: wrap; block-size: auto; min-block-size: 64px; padding-block: 10px; }
-      .rc-window--reflow .rc-search__field { min-inline-size: 120px; white-space: normal; }
     }
   }
 </style>

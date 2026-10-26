@@ -96,8 +96,9 @@
     --nav-line: calc(var(--nav-top) + var(--nav-h));
     --canvas-w: 960px;
     --canvas-h: 600px;
-    /* 100vw, not a percentage: --k feeds transform: scale(), where a percentage inside atan2() has nothing to resolve against. */
+    /* 100vw, not a percentage: --k feeds transform: scale(), where a percentage has nothing to resolve against. */
     --screen-w: min(calc(100vw - 2 * var(--gutter)), calc((100svh - 112px) * 1.6), 960px);
+    /* Divides two lengths in engines without typed division; WebKit gets this wrong for vw and svh, so it takes the division below. */
     --k: tan(atan2(var(--screen-w), var(--canvas-w)));
     --section-pad: clamp(96px, 10vw, 160px);
     /* The night sections' padding, so two of them meet at 224px at most; mole.fit leaves 84px between sections, getthaw.app about 120px. */
@@ -125,6 +126,12 @@
 
     --radius-panel: 12px;
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @supports (scale: calc(1px / 1px)) {
+    :root {
+      --k: calc(var(--screen-w) / var(--canvas-w));
+    }
   }
 
   /* The dark ink set: the night tail from the middle of the 17:50 card down, and the nav while it passes under it. */

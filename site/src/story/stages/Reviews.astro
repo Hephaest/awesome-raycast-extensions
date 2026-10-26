@@ -8,7 +8,8 @@ import { menuAtReviews, menuAfterReview, menuTitle, review, reviewPullRequest, s
 
 /*
  * The day starts on an empty desktop. The GitHub item's dropdown opens the PR in Chrome, the review is submitted, and
- * the extension's background refresh drops the count from 5 to 4. The final frame holds the approval and the new count.
+ * the extension's background refresh drops the count from 5 to 4. The final frame holds the approval and the new count;
+ * the stacked layout holds the open menu instead.
  */
 const pullRequest = reviewPullRequest;
 const time = stages.find((stage) => stage.id === 'reviews')?.time ?? '';
@@ -47,6 +48,25 @@ const frame = { x: 110.8, y: 48, width: 840, height: 600 };
     }
 
     .reviews .browser-frame { scale: .86; transform-origin: 0 0; }
+
+    /*
+     * Stacked, nothing plays, so the frame is the moment before the click: the GitHub item open at its first count,
+     * Needs your review open and the first PR highlighted, in the demo's own colours, with Chrome not yet open.
+     */
+    @media (width < 1150px), (height < 700px) {
+      .reviews .browser-frame { opacity: 0; }
+      .reviews [data-menubar-item] { background-color: var(--menubar-open); }
+      .reviews .menubar__count-value:first-child { opacity: 1; }
+      .reviews .menubar__count-value:not(:first-child) { opacity: 0; }
+      .reviews :is(.mac-dropdown, .mac-dropdown__submenu) { opacity: 1; }
+      /* Placed as the demo places it: 3px left of the item, kept 6px inside the screen for the 274px menu. */
+      .reviews .mac-dropdown {
+        --menu-left: min(calc(var(--menubar-github-start, 0px) - 3px), calc(100% - 280px));
+        --menu-right: auto;
+      }
+      .reviews [data-category='needs-review'] { background-color: var(--menu-parent); }
+      .reviews [data-pr='0'] { background-color: var(--menu-accent); color: #fff; }
+    }
   }
 </style>
 

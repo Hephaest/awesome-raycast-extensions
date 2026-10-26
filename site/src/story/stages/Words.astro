@@ -1,6 +1,5 @@
 ---
 import Window from '../mocks/raycast/Window.astro';
-import WindowFit from '../desktop/WindowFit.astro';
 import SearchBar from '../mocks/raycast/SearchBar.astro';
 import ActionBar from '../mocks/raycast/ActionBar.astro';
 import List from '../mocks/raycast/List.astro';
@@ -23,7 +22,6 @@ const sense = entry.highlightedSense;
 ---
 
 <div class="words-stage">
-  <WindowFit width={840} height={600}>
   <BrowserFrame
     id="words"
     title={`${documentation.title} - ${documentation.vendor}`}
@@ -36,7 +34,6 @@ const sense = entry.highlightedSense;
     <KeelsonMark slot="favicon" />
     <DocumentationPage />
   </BrowserFrame>
-  </WindowFit>
 
   <Keystroke
     name="hotkey"
@@ -44,7 +41,6 @@ const sense = entry.highlightedSense;
     keys={[{ key: '⌃', id: 'words-control' }, { key: '⌥', id: 'words-option' }, { key: 'D', id: 'words-d' }]}
   />
 
-  <WindowFit width={750} height={475}>
   <Window id="words" class="words-stage__window">
     <SearchBar slot="search" placeholder="Filter meanings..." dropdown="Wiktionary" />
     <div class="rc-split">
@@ -69,7 +65,6 @@ const sense = entry.highlightedSense;
     <ActionBar slot="footer" extension="english-dictionary" command={entry.word} action="Copy Definition" />
     <Keystroke slot="overlay" name="down" keys={[{ key: '↓', id: 'words-down' }]} />
   </Window>
-  </WindowFit>
 
   <Cursor id="words" shape="text" />
 </div>
@@ -148,27 +143,6 @@ const sense = entry.highlightedSense;
 
     .words-stage .rc-row__title {
       min-inline-size: 0;
-    }
-
-    /* Stacked: the browser and the window flow one above the other at full width; the chord waits over the browser. */
-    @media (width < 1150px), (height < 700px) {
-      /* Stacked, the guide and the dictionary do not overlap, so the guide stays sharp. */
-      .words-stage [data-browser="words"] {
-        filter: none;
-      }
-
-      .words-stage {
-        position: relative;
-        inset: auto;
-        display: grid;
-        gap: 12px;
-      }
-
-      .words-stage .words-stage__chord {
-        inset-block-start: 160px;
-        inset-inline-start: 50%;
-        translate: -50% 0;
-      }
     }
   }
 </style>

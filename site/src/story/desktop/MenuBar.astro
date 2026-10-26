@@ -30,7 +30,7 @@ const clock = `Oct 23  ${time}`;
     <span class="menubar__item menubar__item--github" data-menubar-item>
       <span class="menubar__github" style={`mask-image: url('${githubIcon.src}')`}></span>
       <span class="menubar__count">
-        {counts.map((count) => <span class="menubar__count-value" data-count={count} style={count !== current ? 'opacity: 0' : undefined}>{count}</span>)}
+        {counts.map((count) => <span class="menubar__count-value" data-count={count} data-current={count === current ? '' : undefined}>{count}</span>)}
       </span>
     </span>
     <span class="menubar__item" aria-hidden="true">
@@ -129,6 +129,10 @@ const clock = `Oct 23  ${time}`;
 
     .menubar__count-value {
       grid-area: 1 / 1;
+    }
+
+    .menubar__count-value:not([data-current]) {
+      opacity: 0;
     }
 
     .menubar__clock {
