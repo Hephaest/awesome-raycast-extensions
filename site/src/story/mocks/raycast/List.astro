@@ -1,0 +1,69 @@
+---
+/** A list column. Alone it fills the window; beside a Detail it takes 284px of the 750, as Raycast 2.9 measures. */
+interface Props {
+  class?: string;
+  split?: boolean;
+}
+
+const { class: className, split = false } = Astro.props;
+---
+
+<div class:list={['rc-list', split && 'rc-list--split', className]}>
+  <slot />
+</div>
+
+<style is:global>
+  @layer components {
+    /* Rows sit flush, 8px in from the window's sides, as in Raycast 2.9. */
+    .rc-list {
+      display: flex;
+      flex-direction: column;
+      padding: 0 8px 8px;
+      overflow: clip;
+    }
+
+    .rc-list--split {
+      inline-size: 284px;
+      border-inline-end: 0.5px solid var(--app-line);
+    }
+
+    /* minmax(0, 1fr) keeps nowrap detail text from widening the pane past the window. */
+    .rc-split {
+      display: grid;
+      grid-template-columns: 284px minmax(0, 1fr);
+      block-size: 100%;
+    }
+
+    .rc-split .rc-list--split {
+      inline-size: auto;
+    }
+
+    .rc-section {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 10px 8px 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--app-ink-2);
+    }
+
+    .rc-section__count {
+      font-weight: 400;
+      color: var(--app-ink-4, var(--app-ink-3));
+    }
+
+    /* Inside a window a section header is 24px tall, and every section after the first opens 8px lower. */
+    .rc-window .rc-section {
+      align-items: center;
+      color: var(--app-ink-3);
+      gap: 12px;
+      block-size: 24px;
+      padding: 0 9px;
+    }
+
+    .rc-window .rc-section:not(:first-child) {
+      margin-block-start: 8px;
+    }
+  }
+</style>

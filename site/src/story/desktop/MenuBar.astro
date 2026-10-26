@@ -1,0 +1,139 @@
+---
+import { extensionByFolder } from '../../data/extensions';
+
+/**
+ * The macOS 26 menu bar as measured on a display without a notch: 30 tall, each title a 24px hit area, the app name
+ * bold, every title and status item at full ink. Titles and status items sit closer than on a real bar, so the two
+ * groups read apart on the narrower card. The status glyphs are our own filled drawings at the system's weight.
+ * `counts` stacks the GitHub item's possible titles; the one equal to `current` shows.
+ */
+interface Props {
+  counts: number[];
+  current: number;
+  time: string;
+  appearance: 'light' | 'dark';
+}
+
+const { counts, current, time, appearance } = Astro.props;
+const githubIcon = extensionByFolder('github').icon;
+const menus = ['File', 'Edit', 'View', 'History', 'Bookmarks', 'Profiles', 'Tab', 'Window', 'Help'];
+// The clock as the owner's own Mac shows it: date and 24-hour time, no weekday.
+const clock = `Oct 23  ${time}`;
+---
+
+<div class="menubar" data-appearance={appearance} data-menubar>
+  <div class="menubar__menus">
+    <span class="menubar__title menubar__title--app">Chrome</span>
+    {menus.map((item) => <span class="menubar__title">{item}</span>)}
+  </div>
+  <div class="menubar__status">
+    <span class="menubar__item menubar__item--github" data-menubar-item>
+      <span class="menubar__github" style={`mask-image: url('${githubIcon.src}')`}></span>
+      <span class="menubar__count">
+        {counts.map((count) => <span class="menubar__count-value" data-count={count} style={count !== current ? 'opacity: 0' : undefined}>{count}</span>)}
+      </span>
+    </span>
+    <span class="menubar__item" aria-hidden="true">
+      <svg width="17" height="13" viewBox="0 0 17 13">
+        <path fill="currentColor" d="M8.5 0C5.3 0 2.4 1.25.25 3.3a.8.8 0 0 0-.02 1.14l.75.76a.8.8 0 0 0 1.12.02A9.23 9.23 0 0 1 8.5 2.6c2.5 0 4.76.98 6.4 2.62a.8.8 0 0 0 1.12-.02l.75-.76a.8.8 0 0 0-.02-1.14A12.03 12.03 0 0 0 8.5 0Zm0 4.15c-2.08 0-3.97.8-5.37 2.12a.8.8 0 0 0-.03 1.15l.76.77a.8.8 0 0 0 1.1.03A5.4 5.4 0 0 1 8.5 6.75c1.38 0 2.64.52 3.54 1.47a.8.8 0 0 0 1.1-.03l.76-.77a.8.8 0 0 0-.03-1.15A7.73 7.73 0 0 0 8.5 4.15Zm0 4.2c-.98 0-1.88.37-2.55 1a.8.8 0 0 0-.03 1.14l1.99 2.03a.8.8 0 0 0 1.18 0l1.99-2.03a.8.8 0 0 0-.03-1.14 3.68 3.68 0 0 0-2.55-1Z" />
+      </svg>
+    </span>
+    <span class="menubar__item" aria-hidden="true">
+      <svg width="26" height="12" viewBox="0 0 26 12">
+        <rect x=".6" y=".6" width="22.3" height="10.8" rx="3.3" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2" />
+        <rect x="2.2" y="2.2" width="19.1" height="7.6" rx="1.9" fill="currentColor" />
+        <path fill="currentColor" fill-opacity=".45" d="M24.1 4.1a1.9 1.9 0 0 1 0 3.8Z" />
+      </svg>
+    </span>
+    <span class="menubar__item" aria-hidden="true">
+      <!-- Control Center: an outlined switch with its knob on the left above a filled switch with its knob cut out on the right. -->
+      <svg width="12" height="13" viewBox="0 0 12 13">
+        <path fill="currentColor" fill-rule="evenodd" d="M3 0h6a3 3 0 0 1 0 6H3a3 3 0 0 1 0-6Zm0 1h6a2 2 0 0 1 0 4H3a2 2 0 0 1 0-4Zm0 .4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2ZM3 7h6a3 3 0 0 1 0 6H3a3 3 0 0 1 0-6Zm6 1a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+      </svg>
+    </span>
+    <span class="menubar__item menubar__clock">{clock}</span>
+  </div>
+</div>
+
+<style is:global>
+  @layer components {
+    .menubar {
+      --menubar-open: rgb(255 255 255 / 0.22);
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      block-size: 30px;
+      /* The text sits a little above the bar's middle, as macOS sets it. */
+      padding-block-end: 4px;
+      padding-inline: 10px;
+      color: var(--menubar-ink);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1;
+      z-index: 4;
+    }
+
+    .menubar__menus,
+    .menubar__status {
+      display: flex;
+      flex: none;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    /*
+     * Each title and status item is its own 24px hit area. The card is narrower than a real screen, so the titles sit 16px
+     * apart and the status items 14px apart (a real bar uses 22), which keeps the gap between the two groups readable.
+     */
+    .menubar__title,
+    .menubar__item {
+      display: inline-flex;
+      align-items: center;
+      block-size: 24px;
+      padding-inline: 8px;
+      border-radius: 12px;
+    }
+
+    .menubar__item {
+      padding-inline: 7px;
+    }
+
+    .menubar__title--app {
+      font-weight: 700;
+    }
+
+    /* The GitHub item keeps 9px a side, so its open pill has the measured shape. */
+    .menubar .menubar__item--github {
+      gap: 5px;
+      padding-inline: 9px;
+    }
+
+    .menubar__github {
+      inline-size: 16px;
+      block-size: 16px;
+      background: currentColor;
+      mask-size: contain;
+      mask-position: center;
+      mask-repeat: no-repeat;
+    }
+
+    .menubar__count {
+      display: inline-grid;
+      min-inline-size: 1ch;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .menubar__count-value {
+      grid-area: 1 / 1;
+    }
+
+    .menubar__clock {
+      white-space: pre;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+</style>

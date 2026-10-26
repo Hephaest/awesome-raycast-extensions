@@ -1,0 +1,55 @@
+---
+import DesktopCard from '../desktop/DesktopCard.astro';
+import Dropdown from '../mocks/mac/Dropdown.astro';
+import Cursor from '../mocks/mac/Cursor.astro';
+import BrowserFrame from '../mocks/browser/BrowserFrame.astro';
+import GitHubPullRequest from '../mocks/browser/GitHubPullRequest.astro';
+import { menuAtReviews, menuAfterReview, menuTitle, review, reviewPullRequest, stages } from '../story';
+
+/*
+ * The day starts on an empty desktop. The GitHub item's dropdown opens the PR in Chrome, the review is submitted, and
+ * the extension's background refresh drops the count from 5 to 4. The final frame holds the approval and the new count.
+ */
+const pullRequest = reviewPullRequest;
+const time = stages.find((stage) => stage.id === 'reviews')?.time ?? '';
+const frame = { x: 110.8, y: 48, width: 840, height: 600 };
+---
+
+<div class="reviews">
+  <DesktopCard id="reviews" appearance="light" counts={[menuTitle(menuAtReviews), menuTitle(menuAfterReview)]} current={menuTitle(menuAfterReview)} time={time}>
+    <BrowserFrame
+      id="reviews"
+      title={pullRequest.title}
+      address={`github.com/${pullRequest.repository}/pull/${pullRequest.number}`}
+      {...frame}
+    >
+      <GitHubPullRequest
+        title={pullRequest.title}
+        number={pullRequest.number}
+        repository={pullRequest.repository}
+        author={pullRequest.author}
+        branch={pullRequest.branch}
+        review={review}
+      />
+    </BrowserFrame>
+
+    <Dropdown id="reviews" categories={menuAtReviews} submenu="needs-review" />
+  </DesktopCard>
+
+  <Cursor id="reviews" />
+</div>
+
+<style is:global>
+  @layer components {
+    .reviews {
+      position: absolute;
+      inset: 0;
+    }
+
+    .reviews .browser-frame { scale: .86; transform-origin: 0 0; }
+  }
+</style>
+
+<script>
+  import './Reviews.script';
+</script>

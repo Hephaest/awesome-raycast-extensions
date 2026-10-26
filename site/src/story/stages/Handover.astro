@@ -1,0 +1,184 @@
+---
+import Window from '../mocks/raycast/Window.astro';
+import SearchBar from '../mocks/raycast/SearchBar.astro';
+import ActionBar from '../mocks/raycast/ActionBar.astro';
+import ActionPanel from '../mocks/raycast/ActionPanel.astro';
+import List from '../mocks/raycast/List.astro';
+import Section from '../mocks/raycast/Section.astro';
+import Row from '../mocks/raycast/Row.astro';
+import Avatar from '../mocks/raycast/Avatar.astro';
+import Toast from '../mocks/raycast/Toast.astro';
+import DesktopCard from '../desktop/DesktopCard.astro';
+import Icon from '../mocks/Icon.astro';
+import Keystroke from '../mocks/Keystroke.astro';
+import type { IconName } from '../mocks/Icon.astro';
+import { issueRowText, issuesAtEvening, issuesAfterHandover, jira, menuAtEvening, menuTitle, mergedIssueKeys, type Issue, stages } from '../story';
+
+/*
+ * 17:50, as the Jira extension really does it, measured from dark captures. Each merged ticket gets ⌘⇧S, three Downs
+ * to Ready For Testing in Change Status and Return: the row updates at once while the footer pill shows the toast. Once
+ * the change succeeds the extension reloads the saved filter (mutate revalidates), which excludes that status, so the
+ * row leaves on its own. The final frame is the list after both reloads.
+ */
+const leaving = mergedIssueKeys;
+const target = 'Ready For Testing';
+const issues = issuesAtEvening;
+const inProgress = issues.filter((issue) => issue.status !== 'To Do');
+const toDo = issues.filter((issue) => issue.status === 'To Do');
+const remaining = issuesAfterHandover.filter((issue) => issue.status !== 'To Do').length;
+const finalSelection = toDo[0].key;
+// The extension lists every transition but the current status, in the workflow's order.
+const transitions = ['To Do', 'In Progress', 'In Review', 'Done', target];
+
+const types: Record<Issue['type'], { icon: IconName; color: string }> = {
+  story: { icon: 'story', color: 'var(--status-green)' },
+  task: { icon: 'task', color: 'var(--status-blue)' },
+  bug: { icon: 'bug', color: 'var(--status-red)' },
+};
+const priorities: Record<Issue['priority'], { icon: IconName; color: string }> = {
+  high: { icon: 'chevron-up', color: 'var(--status-red)' },
+  medium: { icon: 'equals', color: 'var(--status-orange)' },
+  low: { icon: 'chevron-down', color: 'var(--status-blue)' },
+};
+// The extension colors a status by its Jira category: In Progress is yellow, To Do is secondary text.
+const statusColor = (issue: Issue) => (issue.status === 'To Do' ? 'var(--app-ink-2)' : 'var(--status-yellow)');
+// The row as the extension redraws it once the transition is sent: the new status, updated now, the title re-cut.
+const updated = (issue: Issue): Issue => ({ ...issue, status: target, updated: 'now' });
+const time = stages.find((stage) => stage.id === 'handover')?.time ?? '';
+---
+
+<div class="handover-stage">
+  <DesktopCard id="handover" appearance="dark" counts={[menuTitle(menuAtEvening)]} current={menuTitle(menuAtEvening)} time={time}>
+  <Window id="handover" class="handover-stage__window">
+    <SearchBar slot="search" placeholder={jira.placeholder} dropdown={jira.filter} />
+    <List>
+      <Section title="In Progress">
+        <span class="rc-section__count handover-stage__counts">
+          {[inProgress.length, inProgress.length - 1, remaining].map((count) => <span data-in-progress-count={count}>{count === 1 ? '1 issue' : `${count} issues`}</span>)}
+        </span>
+      </Section>
+      {
+        [...inProgress, null, ...toDo].map((issue) => {
+          if (issue === null) return <Section title="To Do" count={toDo.length} />;
+          const row = (shown: Issue, id: string) => (
+            <Row title={issueRowText(shown).title} subtitle={shown.key} id={id} selected={id === finalSelection}>
+              <span slot="icon" style={`color: ${types[shown.type].color}`}>
+                <Icon name={types[shown.type].icon} />
+              </span>
+              <span class="rc-tag" style="--tag: var(--status-purple)">{issueRowText(shown).parent}</span>
+              <span class="rc-status" style={`--status: ${statusColor(shown)}`}>{shown.status}</span>
+              <Avatar initials={shown.assignee?.initials} hue={shown.assignee?.hue} />
+              <span>{shown.updated}</span>
+              <span style={`color: ${priorities[shown.priority].color}`}>
+                <Icon name={priorities[shown.priority].icon} />
+              </span>
+            </Row>
+          );
+          return leaving.includes(issue.key) ? (
+            <div class="handover-stage__leaving" data-leaving={issue.key}>
+              {row(issue, issue.key)}
+              {row(updated(issue), `${issue.key}-updated`)}
+            </div>
+          ) : (
+            row(issue, issue.key)
+          );
+        })
+      }
+    </List>
+    <ActionBar slot="footer" extension="jira" command="My Filters" action="Show Details" />
+
+    {
+      leaving.map((key) => {
+        const current = issues.find((issue) => issue.key === key)?.status;
+        return (
+          <ActionPanel
+            slot="overlay"
+            id={key}
+            placeholder="Search..."
+            sections={[{ title: 'Change Status...', actions: transitions.filter((name) => name !== current).map((name) => ({ title: name, id: name, selected: name === target })) }]}
+          />
+        );
+      })
+    }
+    {/* Each map returns the Toast itself: a slot attribute inside a fragment does not reach the window's overlay slot. */}
+    {leaving.map((key) => <Toast slot="overlay" kind="progress" title={`Changing status to ${target}`} id={`${key}-progress`} />)}
+    {leaving.map((key) => <Toast slot="overlay" kind="success" title="Changed status" message={`${key} transitioned to ${target}`} id={`${key}-done`} />)}
+    <Keystroke
+      slot="overlay"
+      name="change-status"
+      keys={[{ key: '⌘', id: 'handover-command' }, { key: '⇧', id: 'handover-shift' }, { key: 'S', id: 'handover-s' }]}
+    />
+    <Keystroke slot="overlay" name="return" keys={[{ key: '↵', id: 'handover-return' }]} />
+    <Keystroke slot="overlay" name="down" keys={[{ key: '↓', id: 'handover-down' }]} />
+  </Window>
+  </DesktopCard>
+</div>
+
+<style is:global>
+  @layer components {
+    .handover-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Centred on the 944 by 584 screen, in the space under the 30px menu bar. */
+    .handover-stage .handover-stage__window {
+      z-index: 3;
+      inset-inline-start: calc((100% - 750px) / 2);
+      inset-block-start: calc(30px + (100% - 30px - 475px) / 2);
+      /* The long placeholder's min-content width would otherwise widen the window's only column past its edge. */
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .handover-stage .handover-stage__window > *,
+    .handover-stage .rc-search__field {
+      min-inline-size: 0;
+    }
+
+    /* The Change Status panel takes the window's right half, so the captions centre on the left half instead. */
+    .handover-stage [data-keystroke] {
+      inset-inline-start: 25%;
+    }
+
+    .handover-stage__counts {
+      display: inline-grid;
+    }
+
+    .handover-stage__counts > * {
+      grid-area: 1 / 1;
+    }
+
+    .handover-stage__counts > :not(:last-child) {
+      opacity: 0;
+    }
+
+    /* A leaving ticket stacks its row before and after the transition; the reload collapses both. */
+    .handover-stage .handover-stage__leaving {
+      display: grid;
+      block-size: 0;
+      opacity: 0;
+      overflow: clip;
+    }
+
+    .handover-stage .handover-stage__leaving > * {
+      grid-area: 1 / 1;
+    }
+
+    .handover-stage [data-row$='-updated'] {
+      opacity: 0;
+    }
+
+    .handover-stage .rc-row__title {
+      flex: 0 1 auto;
+      min-inline-size: 0;
+    }
+
+    .handover-stage .rc-row__subtitle {
+      flex: none;
+    }
+  }
+</style>
+
+<script>
+  import './Handover.script';
+</script>

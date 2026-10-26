@@ -1,0 +1,88 @@
+---
+/**
+ * The design canvas every preview is drawn on: 960 by 600 design px by default, scaled by --k to --screen-w and
+ * placed in the page's flow. A set may override --canvas-h; the aspect ratio follows it. Windows inside it sit at
+ * design coordinates. Below 1150 wide or 700 tall the canvas flows at full width, with fixed windows scaled
+ * separately and single-column content reflowed.
+ * The windows are decoration for assistive technology unless the canvas holds real controls.
+ */
+interface Props {
+  /** The demo id a stage script registers with the director. */
+  id: string;
+  appearance: 'light' | 'dark';
+  class?: string;
+}
+
+const { id, appearance, class: className } = Astro.props;
+---
+
+<div class:list={['canvas', className]} data-scene={id} data-appearance={appearance}>
+  <div class="canvas__stage" aria-hidden="true">
+    <slot />
+  </div>
+</div>
+
+<style is:global>
+  @layer components {
+    .canvas {
+      position: relative;
+      inline-size: var(--screen-w);
+      aspect-ratio: tan(atan2(var(--canvas-w), var(--canvas-h)));
+      margin-inline: auto;
+    }
+
+    .canvas__stage {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-start: 0;
+      inline-size: var(--canvas-w);
+      block-size: var(--canvas-h);
+      transform: scale(var(--k));
+      transform-origin: 0 0;
+      font-family: var(--font-ui);
+      color: var(--app-ink);
+      text-align: start;
+    }
+
+    @media (width < 1150px), (height < 700px) {
+      .canvas {
+        inline-size: min(100%, 720px);
+        aspect-ratio: auto;
+      }
+
+      .canvas__stage {
+        position: relative;
+        inline-size: 100%;
+        block-size: auto;
+        transform: none;
+      }
+
+      .canvas[data-scene='words'] {
+        inline-size: min(100%, 840px);
+      }
+
+      /* A desktop card keeps its 960 by 600 composition and scales as one unit to the container's width. */
+      .canvas:is([data-scene='reviews'], [data-scene='handover']) {
+        inline-size: min(100%, 960px);
+        aspect-ratio: 960 / 600;
+        container-type: inline-size;
+        overflow: clip;
+        overflow-clip-margin: 60px;
+      }
+
+      .canvas:is([data-scene='reviews'], [data-scene='handover']) > .canvas__stage {
+        position: absolute;
+        inline-size: 960px;
+        block-size: 600px;
+        transform: scale(tan(atan2(100cqw, 960px)));
+      }
+
+      /* Safari has no overflow-clip-margin (WebKit bug 236153) and would cut the card's shadow at the edge, so it does not clip. */
+      @supports not (overflow-clip-margin: 60px) {
+        .canvas:is([data-scene='reviews'], [data-scene='handover']) {
+          overflow: visible;
+        }
+      }
+    }
+  }
+</style>

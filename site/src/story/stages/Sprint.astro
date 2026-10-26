@@ -1,0 +1,304 @@
+---
+import Window from '../mocks/raycast/Window.astro';
+import SearchBar from '../mocks/raycast/SearchBar.astro';
+import ActionBar from '../mocks/raycast/ActionBar.astro';
+import List from '../mocks/raycast/List.astro';
+import Section from '../mocks/raycast/Section.astro';
+import Row from '../mocks/raycast/Row.astro';
+import Avatar from '../mocks/raycast/Avatar.astro';
+import Icon from '../mocks/Icon.astro';
+import Keystroke from '../mocks/Keystroke.astro';
+import ExtensionIcon from '../../components/ExtensionIcon.astro';
+import type { IconName } from '../mocks/Icon.astro';
+import { extensionByFolder } from '../../data/extensions';
+import { issueRowText, issuesAtMorning, jira, prd, storyTicket, you, type Issue } from '../story';
+
+/*
+ * The demo opens on Raycast's root search with "my fi" typed, where real Raycast lists My Filters under Results,
+ * and Return pushes My Filters. The final frame is the issue detail that Show Details pushes.
+ * Every screen follows captures of Raycast 2.9. The root search and the list are visible only while the demo plays.
+ */
+const rootCommand = { command: 'My Filters', extension: extensionByFolder('jira') };
+
+const types: Record<Issue['type'], { icon: IconName; color: string }> = {
+  story: { icon: 'story', color: 'var(--status-green)' },
+  task: { icon: 'task', color: 'var(--status-blue)' },
+  bug: { icon: 'bug', color: 'var(--status-red)' },
+};
+const priorities: Record<Issue['priority'], { icon: IconName; color: string; label: string }> = {
+  high: { icon: 'chevron-up', color: 'var(--status-red)', label: 'High' },
+  medium: { icon: 'equals', color: 'var(--status-orange)', label: 'Medium' },
+  low: { icon: 'chevron-down', color: 'var(--status-blue)', label: 'Low' },
+};
+// The extension colors a status by its Jira category: In Progress is yellow, To Do is secondary text.
+const statusColor = (issue: Issue) => (issue.status === 'To Do' ? 'var(--app-ink-2)' : 'var(--status-yellow)');
+const sections = [
+  { title: 'In Progress', issues: issuesAtMorning.filter((issue) => issue.status !== 'To Do') },
+  { title: 'To Do', issues: issuesAtMorning.filter((issue) => issue.status === 'To Do') },
+];
+const ticket = storyTicket;
+const ticketType = types[ticket.type];
+const ticketPriority = priorities[ticket.priority];
+---
+
+<div class="sprint-stage">
+  <Window id="sprint" class="sprint-stage__window" reflow>
+    <div slot="search" class="sprint-stage__stack">
+      <div class="rc-search" data-layer="root-search">
+        <div class="rc-search__field"><span class="sprint-root__query">my fi</span><span class="sprint-root__caret"></span></div>
+      </div>
+      <div data-layer="list-search"><SearchBar placeholder={jira.placeholder} dropdown={jira.filter} /></div>
+      <div class="rc-search" data-layer="detail-search"><Icon name="chevron-left" class="rc-search__back" /></div>
+    </div>
+
+    <div class="sprint-stage__layer" data-layer="root">
+      <List>
+        <Section title="Results" />
+        <Row title={rootCommand.command} subtitle={rootCommand.extension.title} selected>
+          <span slot="icon">
+            <ExtensionIcon extension={rootCommand.extension} size={20} />
+          </span>
+          <span>Command</span>
+        </Row>
+      </List>
+    </div>
+
+    <div class="sprint-stage__layer" data-layer="list">
+      <List>
+        {
+          sections.map((section) => (
+            <>
+              <Section title={section.title} count={section.issues.length} class="sprint-stage__appear" />
+              {section.issues.map((issue) => (
+                <Row title={issueRowText(issue).title} subtitle={issue.key} id={issue.key} selected={issue.key === ticket.key} class="sprint-stage__appear">
+                  <span slot="icon" style={`color: ${types[issue.type].color}`}>
+                    <Icon name={types[issue.type].icon} />
+                  </span>
+                  <span class="rc-tag" style="--tag: var(--status-purple)">{issueRowText(issue).parent}</span>
+                  <span class="rc-status" style={`--status: ${statusColor(issue)}`}>{issue.status}</span>
+                  <Avatar initials={issue.assignee?.initials} hue={issue.assignee?.hue} />
+                  <span>{issue.updated}</span>
+                  <span style={`color: ${priorities[issue.priority].color}`}>
+                    <Icon name={priorities[issue.priority].icon} />
+                  </span>
+                </Row>
+              ))}
+            </>
+          ))
+        }
+      </List>
+    </div>
+
+    <div class="sprint-stage__layer sprint-issue" data-layer="detail">
+      <div class="sprint-issue__body">
+        <h3 class="sprint-issue__heading">{ticket.summary}</h3>
+        {prd.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+      </div>
+      <dl class="sprint-issue__meta">
+        <div>
+          <dt>Issue Key</dt>
+          <dd><span style={`color: ${ticketType.color}`}><Icon name={ticketType.icon} size={16} /></span>{ticket.key}</dd>
+        </div>
+        <div><dt>Project</dt><dd><span class="sprint-issue__project"></span>{jira.projectName}</dd></div>
+        <div><dt>Status</dt><dd style={`color: ${statusColor(ticket)}`}>{ticket.status}</dd></div>
+        <div>
+          <dt>Priority</dt>
+          <dd><span style={`color: ${ticketPriority.color}`}><Icon name={ticketPriority.icon} size={16} /></span>{ticketPriority.label}</dd>
+        </div>
+        <div><dt>Assignee</dt><dd><Avatar initials={you.initials} hue={you.hue} size={16} />{you.name}</dd></div>
+        <div><dt>Reporter</dt><dd><Avatar initials={prd.reporter.initials} hue={prd.reporter.hue} size={16} />{prd.reporter.name}</dd></div>
+        <div><dt>Labels</dt><dd>None</dd></div>
+        <div><dt>Components</dt><dd>None</dd></div>
+        <div><dt>Fix versions</dt><dd>None</dd></div>
+        <div><dt>Parent</dt><dd><span style="color: var(--status-purple)"><Icon name="epic" size={16} /></span>{ticket.parent.key}</dd></div>
+      </dl>
+    </div>
+
+    <div slot="footer" class="sprint-stage__stack">
+      <div data-layer="root-actions"><ActionBar root action="Open Command" /></div>
+      <div data-layer="list-actions"><ActionBar extension="jira" command="My Filters" action="Show Details" /></div>
+      <div data-layer="detail-actions"><ActionBar extension="jira" command={ticket.key} action="Open in Browser" /></div>
+    </div>
+
+    <Keystroke slot="overlay" name="down" keys={[{ key: '↓', id: 'sprint-down' }]} />
+    <Keystroke slot="overlay" name="return" keys={[{ key: '↵', id: 'sprint-return' }]} />
+  </Window>
+</div>
+
+<style is:global>
+  @layer components {
+    .sprint-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* The canvas is exactly the window's height, as in the hero, so every stage keeps the same gaps around its preview. */
+    @media (width >= 1150px) and (height >= 700px) {
+      .canvas[data-scene='sprint'] {
+        --canvas-h: 475px;
+      }
+    }
+
+    .sprint-stage .sprint-stage__window {
+      inset-inline-start: 120px;
+      inset-block-start: 0;
+      /* The long placeholder's min-content width would otherwise widen the window's only column past its edge. */
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /*
+     * Stacked mode: the window flows at full width and content height, so the detail joins the flow,
+     * and stacks its metadata under the text.
+     */
+    @media (width < 1150px), (height < 700px) {
+      .sprint-stage {
+        position: relative;
+        inset: auto;
+      }
+
+      .sprint-stage .sprint-stage__window {
+        position: relative;
+        inset: auto;
+        inline-size: 100%;
+        block-size: auto;
+      }
+
+      .sprint-stage .rc-window__body {
+        max-block-size: none;
+      }
+
+      .sprint-stage .sprint-issue {
+        position: relative;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .sprint-stage .sprint-issue__meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding-block-start: 12px;
+        border-inline-start: 0;
+        border-block-start: 1px solid var(--app-line);
+      }
+
+      .sprint-stage .sprint-issue__meta dd { white-space: normal; overflow-wrap: anywhere; }
+    }
+
+    .sprint-stage .rc-window > *,
+    .sprint-stage .rc-search__field {
+      min-inline-size: 0;
+    }
+
+    .sprint-stage__stack {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sprint-stage__stack > * {
+      grid-area: 1 / 1;
+      min-inline-size: 0;
+    }
+
+    .sprint-stage__layer {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* The root search and the list belong to the demo only; the final frame is the pushed detail. */
+    .sprint-stage [data-layer='root'],
+    .sprint-stage [data-layer='root-search'],
+    .sprint-stage [data-layer='root-actions'],
+    .sprint-stage [data-layer='list'],
+    .sprint-stage [data-layer='list-search'],
+    .sprint-stage [data-layer='list-actions'] {
+      opacity: 0;
+    }
+
+    .sprint-root__query {
+      color: var(--app-ink);
+    }
+
+    .sprint-root__caret {
+      inline-size: 2px;
+      block-size: 20px;
+      margin-inline-start: 1px;
+      border-radius: 1px;
+      background: var(--app-ink);
+    }
+
+    .sprint-stage .rc-row__title {
+      flex: 0 1 auto;
+      min-inline-size: 0;
+    }
+
+    .sprint-stage .rc-row__subtitle {
+      flex: none;
+    }
+
+    /*
+     * The pushed detail as Raycast 2.9 draws it: the markdown in a 486px column, the metadata beside it in 54px rows,
+     * a 27px heading over 15px text, measured from a Raycast 2.9 capture of the detail view.
+     */
+    .sprint-issue {
+      display: grid;
+      grid-template-columns: 486px minmax(0, 1fr);
+    }
+
+    .sprint-issue__body {
+      padding: 14px 16px 0;
+      font-size: 15px;
+      line-height: 21px;
+    }
+
+    .sprint-issue__heading {
+      margin-block-end: 10px;
+      font-size: 27px;
+      font-weight: 700;
+      line-height: 31px;
+      letter-spacing: -0.01em;
+      text-wrap: wrap;
+    }
+
+    .sprint-issue__body p + p {
+      margin-block-start: 12px;
+    }
+
+    .sprint-issue__meta {
+      display: grid;
+      grid-auto-rows: 54px;
+      align-content: start;
+      margin: 0;
+      padding-inline: 17px 16px;
+      border-inline-start: 1px solid var(--app-line);
+      font-size: 14px;
+    }
+
+    .sprint-issue__meta dt {
+      margin-block-end: 6px;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--app-ink-3);
+    }
+
+    .sprint-issue__meta dd {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      overflow: clip;
+      text-overflow: ellipsis;
+    }
+
+    .sprint-issue__project {
+      flex: none;
+      inline-size: 16px;
+      block-size: 16px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, oklch(62% 0.16 280), oklch(70% 0.13 220));
+    }
+
+  }
+</style>
+
+<script>
+  import './Sprint.script';
+</script>

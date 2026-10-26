@@ -1,0 +1,203 @@
+---
+import SiteIcon from './SiteIcon.astro';
+import GitHubMark from './GitHubMark.astro';
+import DownloadIcon from './DownloadIcon.astro';
+import { repositoryUrl } from '../data/extensions';
+
+/**
+ * The fixed site nav: the site mark and name, the GitHub link with its mark, and Download, which jumps to the
+ * extension list. At the top of the page it is a plain bar; once the page scrolls (data-scrolled) it becomes a floating glass
+ * card. Its ink follows the stage passing under it (data-phase on the nav alone), so the rest of the page keeps its
+ * own surface.
+ */
+---
+
+<span class="site-nav__sentinel" aria-hidden="true" data-site-nav-sentinel></span>
+<header class="site-nav" data-phase="light" data-scrolled="false" data-site-nav>
+  <a class="site-nav__home" href="#top">
+    <SiteIcon size={22} />
+    <span class="site-nav__name">Awesome Raycast Extensions</span>
+  </a>
+  <nav class="site-nav__actions" aria-label="Site">
+    <a class="site-nav__github" href={repositoryUrl} target="_blank" rel="noopener">
+      <GitHubMark size={16} />
+      GitHub
+    </a>
+    <a class="button site-nav__get" href="#extensions">
+      <DownloadIcon />
+      Download
+    </a>
+  </nav>
+</header>
+
+<style is:global>
+  @layer components {
+    .site-nav {
+      position: fixed;
+      inset-block-start: var(--nav-top);
+      inset-inline-start: 50%;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      inline-size: min(var(--page-max), 100% - 24px);
+      block-size: var(--nav-h);
+      padding-block: 10px;
+      padding-inline: 16px 12px;
+      translate: -50% 0;
+      border: 1px solid transparent;
+      border-radius: 14px;
+      background-color: transparent;
+      /* Safari reads the unprefixed property from 18 (2024-09); the prefix stays until Safari 18 is the floor (Baseline widely available 2027-03). */
+      -webkit-backdrop-filter: blur(0) saturate(1);
+      backdrop-filter: blur(0) saturate(1);
+      box-shadow: none;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 500;
+      transition:
+        color 400ms var(--ease-out),
+        background-color 400ms var(--ease-out),
+        border-color 400ms var(--ease-out),
+        box-shadow 400ms var(--ease-out),
+        -webkit-backdrop-filter 400ms var(--ease-out),
+        backdrop-filter 400ms var(--ease-out);
+    }
+
+    /* Once the page leaves the top, the bar becomes the floating glass card. */
+    .site-nav[data-scrolled='true'] {
+      border-color: rgb(0 0 0 / 0.08);
+      background-color: color-mix(in oklch, var(--room) 72%, transparent);
+      -webkit-backdrop-filter: blur(12px) saturate(1.2);
+      backdrop-filter: blur(12px) saturate(1.2);
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.5),
+        0 8px 24px -16px rgb(0 0 0 / 0.3);
+    }
+
+    /* Over a dark stage the glass takes that stage's night surface, so the bar never reads as a white strip. */
+    .site-nav[data-phase='dark'] {
+      --room: var(--day-night);
+    }
+
+    .site-nav[data-scrolled='true'][data-phase='dark'] {
+      border-color: rgb(255 255 255 / 0.08);
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.12),
+        0 8px 24px -16px rgb(0 0 0 / 0.5);
+    }
+
+    /* A one pixel marker at the document top; while it is on screen the page has not scrolled. */
+    .site-nav__sentinel {
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline-start: 0;
+      inline-size: 1px;
+      block-size: 1px;
+      pointer-events: none;
+    }
+
+    .site-nav a:not(.button) {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .site-nav__home {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .site-nav__actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .site-nav__github {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding-inline: 4px;
+    }
+
+    .site-nav__get {
+      min-block-size: 36px;
+      padding-inline: 14px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    /* On a phone the name leaves the bar but stays the link's accessible name. */
+    @media (max-width: 719px) {
+      .site-nav__name {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .site-nav__actions {
+        gap: 12px;
+      }
+    }
+  }
+</style>
+
+<script>
+  const nav = document.querySelector<HTMLElement>('[data-site-nav]');
+
+  /* The nav turns into the glass card once the top sentinel leaves the viewport, with no scroll handler. */
+  const sentinel = document.querySelector<HTMLElement>('[data-site-nav-sentinel]');
+  if (nav && sentinel) {
+    new IntersectionObserver(([entry]) => {
+      nav.dataset.scrolled = entry.isIntersecting ? 'false' : 'true';
+    }).observe(sentinel);
+  }
+
+  /*
+   * The nav's phase is the tone of whatever [data-tone] section lies under its bottom line. A one pixel root strip
+   * just below the nav line, in pixels because rootMargin takes no calc(), recreated on resize. Without JavaScript the
+   * nav keeps its light ink, also over the night tail.
+   */
+  const toned = [...document.querySelectorAll<HTMLElement>('[data-tone]')];
+  if (nav && toned.length) {
+    const underLine = new Set<HTMLElement>();
+    let observer: IntersectionObserver | null = null;
+    const navLine = () => nav.getBoundingClientRect().bottom;
+
+    const apply = () => {
+      const current = [...underLine].find((element) => element.dataset.tone === 'dark');
+      nav.dataset.phase = current ? 'dark' : 'light';
+    };
+
+    const observe = () => {
+      observer?.disconnect();
+      underLine.clear();
+      const top = navLine();
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const element = entry.target as HTMLElement;
+            if (entry.isIntersecting) underLine.add(element);
+            else underLine.delete(element);
+          }
+          apply();
+        },
+        { rootMargin: `-${top}px 0px -${Math.max(0, innerHeight - top - 1)}px 0px`, threshold: 0 },
+      );
+      for (const element of toned) observer.observe(element);
+    };
+
+    let timer = 0;
+    addEventListener('resize', () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(observe, 150);
+    });
+    observe();
+  }
+</script>

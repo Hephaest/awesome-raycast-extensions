@@ -1,0 +1,62 @@
+---
+import Icon from './Icon.astro';
+
+/**
+ * A keystroke caption over a demo, as KeyCastr draws one: the typed keys in large white type on a translucent black
+ * strip, so it reads as a subtitle over the scene, never as part of the app. Scripts show it and `strike()` each key.
+ * It shows key events only, never text. Hidden at rest, like every demo overlay.
+ */
+interface Props {
+  /** The handle the stage script finds it by, rendered as data-keystroke. */
+  name: string;
+  /** The keys of one chord, in press order; `id` is rendered as data-key for the script. */
+  keys: { key: string; id?: string }[];
+  class?: string;
+}
+
+const { name, keys, class: className } = Astro.props;
+---
+
+<div class:list={['keystroke', className]} data-keystroke={name}>
+  {
+    keys.map(({ key, id }) => (
+      <span class="keystroke__key" data-key={id}>
+        {key === '↵' ? <Icon name="return" size={20} /> : key}
+      </span>
+    ))
+  }
+</div>
+
+<style is:global>
+  @layer components {
+    /* Placed as a subtitle: centered, 68px above the window's bottom edge, clear of the 52px footer pills. */
+    .keystroke {
+      position: absolute;
+      inset-block-end: 68px;
+      inset-inline-start: 50%;
+      translate: -50% 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 12px;
+      background: rgb(0 0 0 / 0.72);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14), 0 8px 24px rgb(0 0 0 / 0.2);
+      color: #fff;
+      font-family: var(--font-ui);
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 28px;
+      white-space: nowrap;
+      opacity: 0;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    .keystroke__key {
+      display: inline-grid;
+      place-items: center;
+      min-inline-size: 18px;
+    }
+  }
+</style>

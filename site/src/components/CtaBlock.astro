@@ -1,0 +1,34 @@
+---
+import GitHubMark from './GitHubMark.astro';
+import DownloadIcon from './DownloadIcon.astro';
+import { repositoryUrl } from '../data/extensions';
+
+/** The opening's two actions: Download, which jumps to the extension list, and View on GitHub. */
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div class:list={['cta', className]}>
+  <a class="button" href="#extensions">
+    <DownloadIcon />
+    Download
+  </a>
+  <a class="button button--quiet" href={repositoryUrl} target="_blank" rel="noopener">
+    <GitHubMark size={16} />
+    View on GitHub
+  </a>
+</div>
+
+<style is:global>
+  @layer components {
+    .cta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+  }
+</style>

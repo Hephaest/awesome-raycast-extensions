@@ -1,0 +1,291 @@
+/*
+ * Layer order: later layers win, whatever the selector specificity.
+ * Base.astro declares the order first; this repeats it for files that load alone.
+ */
+@layer reset, tokens, components;
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    /* Safari has no unprefixed text-size-adjust (checked 2026-10). */
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+    scroll-padding-block-start: calc(var(--nav-line) + 16px);
+  }
+
+  body {
+    margin: 0;
+    min-block-size: 100svh;
+    line-height: 1.5;
+    /* Non-standard and macOS only; the type scale was tuned with it, so it stays. */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+
+  input,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  p {
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  :where(a, button, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@layer tokens {
+  /*
+   * The page's tokens. --room is the page's neutral surface, used by everything outside the day story.
+   * The day colours are the stops of the story's gradient; a stage that sits on a dark stop sets data-tone="dark"
+   * and gets the dark ink set below, so ink never animates.
+   */
+  :root {
+    color-scheme: light;
+
+    --room: oklch(97.5% 0.004 250);
+    --ink: oklch(20% 0.015 260);
+    --ink-muted: oklch(42% 0.015 260);
+    --ink-faint: oklch(52% 0.012 260);
+    --line: rgb(0 0 0 / 0.1);
+    --accent: oklch(52% 0.15 255);
+
+    --day-morning: oklch(92% 0.014 250);
+    --day-noon: oklch(96% 0.006 90);
+    --day-afternoon: oklch(90% 0.022 70);
+    --day-sunset: oklch(89% 0.05 58);
+    --day-night: oklch(24% 0.035 275);
+
+    /* Layout: one container, one gutter, one fixed nav line, one design canvas scaled by --k. */
+    --page-max: 1280px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --nav-top: 12px;
+    --nav-h: 56px;
+    --nav-line: calc(var(--nav-top) + var(--nav-h));
+    --canvas-w: 960px;
+    --canvas-h: 600px;
+    /* 100vw, not a percentage: --k feeds transform: scale(), where a percentage inside atan2() has nothing to resolve against. */
+    --screen-w: min(calc(100vw - 2 * var(--gutter)), calc((100svh - 112px) * 1.6), 960px);
+    --k: tan(atan2(var(--screen-w), var(--canvas-w)));
+    --section-pad: clamp(96px, 10vw, 160px);
+    /* The night sections' padding, so two of them meet at 224px at most; mole.fit leaves 84px between sections, getthaw.app about 120px. */
+    --tail-gap: clamp(72px, 6vw, 112px);
+    --stage-gap: 96px;
+
+    /*
+     * Five text sizes: display (the slogan and the two chapter openers), heading (the stages, the FAQ), body, label
+     * (nav, buttons, times, one-liners) and small print (footer, footnote). Display and heading grow with the viewport
+     * and reach their caps at the 1280px page width: 64 and 40 on a desktop, 40 and 28 on a phone. Below body size,
+     * weight carries hierarchy, never a size a few pixels off its neighbour.
+     */
+    --type-display: clamp(2.5rem, 1.84rem + 2.7vw, 4rem);
+    --type-heading: clamp(1.75rem, 1.42rem + 1.35vw, 2.5rem);
+    --type-body: clamp(1rem, 0.956rem + 0.188vw, 1.125rem);
+    --type-label: 14px;
+    --type-small: 12px;
+
+    /* One face, Inter, for everything the page says; everything drawn as an app stays in the system face (--font-ui). */
+    --font: 'Inter Variable', Inter, system-ui, -apple-system, sans-serif;
+    --font-display: var(--font);
+    --font-time: var(--font);
+    --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --font-ui: -apple-system, system-ui, 'Inter Variable', Inter, sans-serif;
+
+    --radius-panel: 12px;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* The dark ink set: the night tail from the middle of the 17:50 card down, and the nav while it passes under it. */
+  [data-tone='dark'],
+  [data-phase='dark'] {
+    color-scheme: dark;
+
+    --ink: oklch(94% 0.008 260);
+    --ink-muted: oklch(84% 0.01 260);
+    --ink-faint: oklch(80% 0.01 260);
+    --line: rgb(255 255 255 / 0.12);
+    --accent: oklch(78% 0.12 255);
+  }
+
+  /* The document canvas stays the light room though the page ends on the night, so the macOS overscroll area below the footer shows light for a moment. */
+  body {
+    background: var(--room);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: var(--type-body);
+    font-feature-settings: 'cv01';
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--accent) 35%, transparent);
+  }
+}
+
+@layer components {
+  .container {
+    inline-size: min(var(--page-max), 100% - 2 * var(--gutter));
+    margin-inline: auto;
+  }
+
+  /*
+   * The night surface the page ends on, from the close to the footer. Set with data-tone="dark" on the same element.
+   * The colour is declared here because the body's colour is computed in light ink and would be inherited as is.
+   */
+  .night {
+    --room: var(--day-night);
+    background: var(--room);
+    color: var(--ink);
+  }
+
+  /* Display text: the slogan, the section headings, the stage headings. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  /* A time or a small label: 14px, tabular, in the time face. */
+  .label {
+    font-family: var(--font-time);
+    font-size: var(--type-label);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+    color: var(--ink-faint);
+  }
+
+  /* Buttons: the filled one for the main action, the quiet one beside it. */
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-block-size: 40px;
+    padding-inline: 18px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--room);
+    font-size: var(--type-label);
+    font-weight: 560;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      transform 100ms var(--ease-out),
+      background-color 150ms var(--ease-out);
+  }
+
+  .button:active {
+    transform: scale(0.99);
+  }
+
+  .button--quiet {
+    border-color: var(--line);
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .button--quiet:hover {
+    background: color-mix(in oklch, var(--ink) 6%, transparent);
+  }
+
+  /* On devices that hover, the filled button lifts toward the page colour and a download arrow steps down. */
+  @media (hover: hover) {
+    .button:not(.button--quiet):hover {
+      background: color-mix(in oklch, var(--ink) 85%, var(--room));
+    }
+  }
+
+  .download-icon {
+    transition: translate 150ms var(--ease-out);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .button:hover .download-icon {
+      translate: 0 1.5px;
+    }
+  }
+
+  /* Text links: the underline steps away on hover. */
+  .link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklch, currentColor 40%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    transition:
+      text-underline-offset 100ms var(--ease-out),
+      text-decoration-color 100ms var(--ease-out);
+  }
+
+  .link:hover {
+    text-underline-offset: 4px;
+    text-decoration-color: currentColor;
+  }
+
+  /*
+   * Simulated glass for everything inside a window mock: a canvas that animates its opacity is a backdrop root,
+   * so a real blur there could not sample the page. An opaque surface with the same rims reads the same in every engine.
+   */
+  .pane {
+    position: relative;
+    border: 1px solid var(--app-line-strong);
+    border-radius: var(--radius-panel);
+    background: var(--app-surface);
+    box-shadow:
+      inset 0 1px 0 var(--app-rim),
+      inset 0 -1px 0 var(--app-rim-bottom),
+      var(--app-shadow);
+  }
+
+  @media (prefers-contrast: more) {
+    .pane {
+      background: var(--app-bg, white);
+      border-color: var(--app-line-strong);
+    }
+  }
+}
+
+/* Timed motion stops under reduced motion; scroll-scrubbed animations, marked data-scrub, are position and stay. */
+@media (prefers-reduced-motion: reduce) {
+  :not([data-scrub]),
+  :not([data-scrub])::before,
+  :not([data-scrub])::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

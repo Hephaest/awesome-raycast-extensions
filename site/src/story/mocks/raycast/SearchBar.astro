@@ -1,0 +1,75 @@
+---
+import Icon from '../Icon.astro';
+
+interface Props {
+  placeholder?: string;
+  /** The dropdown on the right, such as a filter name. */
+  dropdown?: string;
+  /** The back chevron of a pushed view; root search has none. */
+  back?: boolean;
+}
+
+const { placeholder = '', dropdown, back = true } = Astro.props;
+---
+
+<div class="rc-search">
+  {back && <Icon name="chevron-left" class="rc-search__back" />}
+  <div class="rc-search__field">
+    <span class="rc-search__placeholder">{placeholder}</span>
+  </div>
+  {
+    dropdown && (
+      <div class="rc-search__dropdown">
+        <span>{dropdown}</span>
+        <Icon name="chevron-down" size={16} />
+      </div>
+    )
+  }
+</div>
+
+<style is:global>
+  @layer components {
+    /* Raycast 2.9 draws no line under the search bar; the field's text is 18px and the chevron 24px. */
+    .rc-search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      block-size: 64px;
+      padding-inline: 14px 16px;
+      font-size: 18px;
+    }
+
+    .rc-search__back {
+      flex: none;
+      inline-size: 24px;
+      block-size: 24px;
+      color: var(--app-ink-2);
+    }
+
+    .rc-search__field {
+      position: relative;
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-inline-size: 0;
+      overflow: clip;
+      white-space: nowrap;
+    }
+
+    .rc-search__placeholder {
+      color: var(--app-ink-4, var(--app-ink-3));
+    }
+
+    /* At rest the dropdown is plain text and a chevron; Raycast draws its chip only while it is open or hovered. */
+    .rc-search__dropdown {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 4px 6px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--app-ink);
+    }
+  }
+</style>

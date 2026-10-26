@@ -1,0 +1,123 @@
+---
+import Icon from '../Icon.astro';
+import Keycap from './Keycap.astro';
+import type { IconName } from '../Icon.astro';
+
+/**
+ * The actions popover at the window's bottom right. Rendered in place at opacity 0;
+ * the stage script shows it, highlights a row, and hides it.
+ */
+interface Action {
+  title: string;
+  icon?: IconName;
+  keys?: string[];
+  selected?: boolean;
+  id?: string;
+}
+
+interface Props {
+  sections: { title?: string; actions: Action[] }[];
+  id?: string;
+  /** The search row's text: "Search for actions..." on the actions panel, "Search..." on a submenu. */
+  placeholder?: string;
+}
+
+const { sections, id, placeholder = 'Search for actions...' } = Astro.props;
+---
+
+<div class="rc-panel pane" data-panel={id}>
+  {
+    sections.map((section) => (
+      <div class="rc-panel__section">
+        {section.title && <div class="rc-panel__title">{section.title}</div>}
+        {section.actions.map((action) => (
+          <div class="rc-panel__row" data-action={action.id} data-selected={action.selected ? 'true' : undefined}>
+            {action.icon && <Icon name={action.icon} size={14} />}
+            <span class="rc-panel__label">{action.title}</span>
+            {action.keys && (
+              <span class="rc-panel__keys">
+                {action.keys.map((key) => (
+                  <Keycap keys={key} />
+                ))}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    ))
+  }
+  <div class="rc-panel__search">
+    <span>{placeholder}</span>
+  </div>
+</div>
+
+<style is:global>
+  @layer components {
+    /*
+     * Doubled with .pane, which sets position and radius at the same specificity, so the stylesheet order cannot matter.
+     * Raycast 2.9's measures: 350px wide, 8px from the window's right and bottom edges over the footer, a 16px corner,
+     * 36px rows with a 10px corner and 14px text, and the search row 40px tall under a hairline.
+     */
+    .rc-panel.pane {
+      position: absolute;
+      inset-inline-end: 8px;
+      inset-block-end: 8px;
+      inline-size: 350px;
+      padding: 0 8px;
+      border-radius: 16px;
+      background: var(--app-surface);
+      opacity: 0;
+      z-index: 4;
+      transform-origin: 100% 100%;
+    }
+
+    .rc-panel__section + .rc-panel__section {
+      margin-block-start: 4px;
+      padding-block-start: 4px;
+      border-block-start: 1px solid var(--app-line);
+    }
+
+    .rc-panel__title {
+      padding: 10px 6px 4px;
+      font-size: 12px;
+      color: var(--app-ink-3);
+    }
+
+    .rc-panel__row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      block-size: 36px;
+      padding-inline: 8px;
+      border-radius: 10px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .rc-panel__row[data-selected='true'] {
+      background: var(--app-selection);
+    }
+
+    .rc-panel__label {
+      flex: 1;
+      overflow: clip;
+      text-overflow: ellipsis;
+    }
+
+    .rc-panel__keys {
+      display: inline-flex;
+      gap: 4px;
+    }
+
+    .rc-panel__search {
+      display: flex;
+      align-items: center;
+      block-size: 40px;
+      margin: 4px -8px 0;
+      padding-inline: 18px;
+      border-block-start: 1px solid var(--app-line);
+      font-size: 14px;
+      color: var(--app-ink-4, var(--app-ink-3));
+    }
+  }
+</style>

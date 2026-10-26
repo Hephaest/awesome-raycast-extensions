@@ -1,0 +1,42 @@
+---
+import { Image } from 'astro:assets';
+import type { Extension } from '../data/extensions';
+
+interface Props {
+  extension: Extension;
+  size?: number;
+  class?: string;
+}
+
+const { extension, size = 32, class: className } = Astro.props;
+---
+
+<Image
+  src={extension.icon}
+  alt=""
+  width={size * 2}
+  height={size * 2}
+  class:list={['extension-icon', extension.monochrome && 'extension-icon--mono', className]}
+  style={`--icon-size: ${size}px`}
+/>
+
+<style is:global>
+  @layer components {
+    .extension-icon {
+      flex: none;
+      inline-size: var(--icon-size);
+      block-size: var(--icon-size);
+      border-radius: calc(var(--icon-size) * 0.22);
+    }
+
+    /* A black mark reads white on dark surfaces: a dark stage, or a dark app. */
+    [data-tone='dark'] .extension-icon--mono,
+    [data-appearance='dark'] .extension-icon--mono {
+      filter: invert(1);
+    }
+
+    [data-appearance='light'] .extension-icon--mono {
+      filter: none;
+    }
+  }
+</style>

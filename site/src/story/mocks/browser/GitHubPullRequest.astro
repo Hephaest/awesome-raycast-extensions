@@ -1,0 +1,1685 @@
+---
+import Identicon from '../github/Identicon.astro';
+import Octicon, { type OcticonName } from '../github/Octicon.astro';
+import { menuAtReviews, you, zadig, type Person } from '../../story';
+
+/**
+ * A signed-in github.com pull request page at 840px wide, drawn on Primer's tokens with the story's data and no GitHub mark.
+ * The markup is the final frame: Files changed with the review dialog hidden, the Conversation the page opens on hidden
+ * (data-awaiting-review), and on top the Conversation scrolled to the submitted approval (data-submitted-review).
+ */
+interface Props {
+  title: string;
+  number: number;
+  repository: string;
+  author: Person | typeof you;
+  branch: string;
+  review?: { reviewer: Person | typeof you; comment?: string };
+  /** The commit count in the meta line and the Commits tab. */
+  commits?: number;
+  /** The count on the Files changed tab. */
+  files?: number;
+}
+
+const { title, number, repository, author, branch, review, commits = 1, files = 1 } = Astro.props;
+
+type Account = Pick<Person, 'github'>;
+
+const [owner, name] = repository.split('/');
+const commitWord = commits === 1 ? 'commit' : 'commits';
+const login = author.github.login;
+
+// The repository's open pull requests, as the story's menu lists them at 13:30.
+const openPullRequests = new Set(
+  menuAtReviews.flatMap((category) => category.pullRequests.filter((pull) => pull.repository === repository).map((pull) => pull.id)),
+).size;
+// Not in the story: the repository's CI runs two checks on every pull request.
+const checks = 2;
+
+// The one commit: the Zadig run's commit when the branch is the one it built, otherwise the review's retry change.
+const commit = branch === zadig.run.branch ? { message: zadig.run.subject, sha: zadig.run.commit } : { message: 'fix(carrier): retry rate lookups with backoff', sha: '4e1b7a2' };
+const description = 'Add a bounded retry policy for temporary carrier API failures.';
+
+/* The retry change in src/carrier/rates.ts, as GitHub's diff draws it: syntax-coloured tokens, no +/- markers. */
+type Token = [text: string, kind?: 'keyword' | 'constant' | 'string' | 'entity' | 'comment'];
+interface DiffLine {
+  kind: 'context' | 'add' | 'delete';
+  old?: number;
+  new?: number;
+  code: Token[];
+}
+const path = 'src/carrier/rates.ts';
+// Two hunks: the imports, then the call wrapped in the retry with its options and a predicate for transient failures.
+const hunks: { header: string; lines: DiffLine[] }[] = [
+  {
+    header: '@@ -1,5 +1,7 @@',
+    lines: [
+      { kind: 'context', old: 1, new: 1, code: [['import', 'keyword'], [' { carriers } '], ['from', 'keyword'], [' '], ["'./carriers'", 'string'], [';']] },
+      { kind: 'context', old: 2, new: 2, code: [['import', 'keyword'], [' { normalizeRates } '], ['from', 'keyword'], [' '], ["'./normalize'", 'string'], [';']] },
+      { kind: 'add', new: 3, code: [['import', 'keyword'], [' { retry } '], ['from', 'keyword'], [' '], ["'../lib/retry'", 'string'], [';']] },
+      { kind: 'add', new: 4, code: [['import', 'keyword'], [' { CarrierError } '], ['from', 'keyword'], [' '], ["'./errors'", 'string'], [';']] },
+      { kind: 'context', old: 3, new: 5, code: [['']] },
+      { kind: 'context', old: 4, new: 6, code: [['export', 'keyword'], [' '], ['const', 'keyword'], [' RATE_TIMEOUT_MS = '], ['4000', 'constant'], [';']] },
+      { kind: 'context', old: 5, new: 7, code: [['']] },
+    ],
+  },
+  {
+    header: '@@ -14,4 +16,19 @@ export async function getCarrierRates(request: RateRequest) {',
+    lines: [
+      { kind: 'context', old: 14, new: 16, code: [['  '], ['const', 'keyword'], [' carrier = carriers.'], ['get', 'entity'], ['(request.carrierId);']] },
+      { kind: 'delete', old: 15, code: [['  '], ['const', 'keyword'], [' rates = '], ['await', 'keyword'], [' carrier.'], ['fetchRates', 'entity'], ['(request);']] },
+      { kind: 'add', new: 17, code: [['  '], ['const', 'keyword'], [' rates = '], ['await', 'keyword'], [' '], ['retry', 'entity'], ['(() '], ['=>', 'keyword'], [' carrier.'], ['fetchRates', 'entity'], ['(request), {']] },
+      { kind: 'add', new: 18, code: [['    retryLimit: '], ['3', 'constant'], [',']] },
+      { kind: 'add', new: 19, code: [['    backoff: '], ["'exponential'", 'string'], [',']] },
+      { kind: 'add', new: 20, code: [['    baseDelayMs: '], ['250', 'constant'], [',']] },
+      { kind: 'add', new: 21, code: [['    shouldRetry: isTransient,']] },
+      { kind: 'add', new: 22, code: [['  });']] },
+      { kind: 'context', old: 16, new: 23, code: [['  '], ['return', 'keyword'], [' '], ['normalizeRates', 'entity'], ['(rates);']] },
+      { kind: 'context', old: 17, new: 24, code: [['}']] },
+      { kind: 'add', new: 25, code: [['']] },
+      { kind: 'add', new: 26, code: [['// Timeouts and 5xx responses are worth another attempt; a 4xx is not.', 'comment']] },
+      { kind: 'add', new: 27, code: [['function', 'keyword'], [' '], ['isTransient', 'entity'], ['(error: '], ['unknown', 'constant'], [') {']] },
+      { kind: 'add', new: 28, code: [['  '], ['if', 'keyword'], [' (!(error '], ['instanceof', 'keyword'], [' CarrierError)) '], ['return', 'keyword'], [' '], ['false', 'constant'], [';']] },
+      { kind: 'add', new: 29, code: [['  '], ['return', 'keyword'], [' error.timedOut || error.status >= '], ['500', 'constant'], [';']] },
+      { kind: 'add', new: 30, code: [['}']] },
+    ],
+  },
+];
+const diff = hunks.flatMap((hunk) => hunk.lines);
+const additions = diff.filter((line) => line.kind === 'add').length;
+const deletions = diff.filter((line) => line.kind === 'delete').length;
+// GitHub's diffstat: five squares split by the share of added and deleted lines.
+const greenSquares = Math.round((5 * additions) / (additions + deletions));
+const redSquares = Math.round((5 * deletions) / (additions + deletions));
+const squares = Array.from({ length: 5 }, (_, index) => (index < greenSquares ? 'add' : index < greenSquares + redSquares ? 'delete' : 'neutral'));
+
+/* The Conversation timeline, as data: one renderer draws every view of it below. */
+type Item =
+  | { kind: 'description'; author: Account; body: string; time: string }
+  | { kind: 'commit' }
+  | { kind: 'requested'; actor: Account; reviewer: Account; time: string }
+  | { kind: 'review'; reviewer: Account; time: string; comment?: string }
+  | { kind: 'merge' };
+type Side =
+  | { kind: 'people'; label: string; person?: Account; status?: 'awaiting' }
+  | { kind: 'text'; label: string; text: string }
+  | { kind: 'development' }
+  | { kind: 'notifications' }
+  | { kind: 'participants'; people: Account[] };
+interface View {
+  id: 'awaiting' | 'submitted';
+  scrolled: boolean;
+  items: Item[];
+  sidebar: Side[];
+}
+
+const reviewer: Account | undefined = review?.reviewer;
+const opening: Item[] = [
+  { kind: 'description', author, body: description, time: 'yesterday' },
+  { kind: 'commit' },
+  ...(reviewer ? [{ kind: 'requested', actor: author, reviewer, time: 'yesterday' } as Item] : []),
+];
+
+const views: View[] = [
+  {
+    id: 'awaiting',
+    scrolled: false,
+    items: opening,
+    sidebar: [
+      { kind: 'people', label: 'Reviewers', person: reviewer, status: 'awaiting' },
+      { kind: 'people', label: 'Assignees', person: author },
+      { kind: 'text', label: 'Labels', text: 'None yet' },
+      { kind: 'text', label: 'Projects', text: 'None yet' },
+      { kind: 'text', label: 'Milestone', text: 'No milestone' },
+    ],
+  },
+  {
+    id: 'submitted',
+    scrolled: true,
+    items: [
+      ...opening.slice(-1),
+      ...(reviewer ? [{ kind: 'review', reviewer, time: 'now', comment: review?.comment } as Item] : []),
+      { kind: 'merge' },
+    ],
+    sidebar: [{ kind: 'development' }, { kind: 'notifications' }, { kind: 'participants', people: reviewer ? [author, reviewer] : [author] }],
+  },
+];
+
+const repositoryTabs: [OcticonName, string, number?][] = [
+  ['code', 'Code'],
+  ['issue-opened', 'Issues'],
+  ['git-pull-request', 'Pull requests', openPullRequests],
+  ['play', 'Actions'],
+  ['table', 'Projects'],
+];
+const radios = [
+  { label: 'Comment', hint: 'Submit general feedback without explicit approval.' },
+  { label: 'Approve', hint: 'Give your approval to merge these changes.' },
+  { label: 'Request changes', hint: 'Submit feedback that must be addressed before merging.' },
+];
+---
+
+<div class="gh-pull">
+  <div class="gh-pull__page" data-page>
+  <header class="gh-pull__header">
+    <div class="gh-pull__top">
+      <span class="gh-header-button"><Octicon name="three-bars" /></span>
+      <span class="gh-pull__crumbs">
+        <span class="gh-pull__crumb"><span class="gh-pull__org"><Octicon name="organization" size={10} /></span>{owner}</span>
+        <span class="gh-pull__slash"></span>
+        <span class="gh-pull__crumb gh-pull__crumb--repository">{name}</span>
+      </span>
+      <span class="gh-pull__search"><Octicon name="search" /><span class="gh-pull__search-text">Type <kbd>/</kbd> to search</span></span>
+      <span class="gh-header-button"><Octicon name="copilot" /></span>
+      <span class="gh-header-button gh-header-button--menu"><Octicon name="plus" /><Octicon name="triangle-down" /></span>
+      <span class="gh-header-button"><Octicon name="inbox" /></span>
+      <Identicon person={you} size={32} round />
+    </div>
+    <nav class="gh-pull__nav">
+      {
+        repositoryTabs.map(([icon, label, count]) => (
+          <span class:list={['gh-repository-tab', { 'is-current': icon === 'git-pull-request' }]}>
+            <Octicon name={icon} />
+            {label}
+            {count !== undefined && <span class="gh-counter">{count}</span>}
+          </span>
+        ))
+      }
+      <span class="gh-repository-tab gh-repository-tab--more">More<Octicon name="triangle-down" /></span>
+    </nav>
+  </header>
+
+  <div class="gh-pull__content">
+    <div class="gh-pull__title-row">
+      <h1 class="gh-pull__title">{title} <span class="gh-pull__number">#{number}</span></h1>
+      <span class="gh-pull__actions">
+        <span class="gh-button">Edit</span>
+        <span class="gh-button gh-button--primary"><Octicon name="code" />Code<Octicon name="triangle-down" /></span>
+      </span>
+    </div>
+
+    <div class="gh-pull__meta">
+      <span class="gh-label gh-label--open"><Octicon name="git-pull-request" />Open</span>
+      <span class="gh-pull__summary">
+        <strong>{login}</strong> wants to merge {commits} {commitWord} into <code class="gh-branch">main</code> from{' '}
+        <code class="gh-branch">{branch}</code><Octicon name="copy" class="gh-pull__copy" />
+      </span>
+    </div>
+
+    <nav class="gh-tabs">
+      <span class="gh-tab" data-conversation-tab>
+        <Octicon name="comment-discussion" />Conversation<span class="gh-counter">0</span>
+      </span>
+      <span class="gh-tab"><Octicon name="git-commit" />Commits<span class="gh-counter">{commits}</span></span>
+      <span class="gh-tab"><Octicon name="checklist" />Checks<span class="gh-counter">{checks}</span></span>
+      <span class="gh-tab is-current" data-files-tab>
+        <Octicon name="file-diff" />Files changed<span class="gh-counter">{files}</span>
+      </span>
+      <span class="gh-diffstat">
+        <span class="gh-diffstat__added">+{additions}</span><span class="gh-diffstat__deleted">−{deletions}</span>
+        <span class="gh-diffstat__squares">{squares.map((kind) => <i class={`is-${kind}`} />)}</span>
+      </span>
+    </nav>
+
+    <div class="gh-pull__stage">
+      <div class="gh-files" data-review-files>
+        <div class="gh-files__toolbar" data-files-toolbar>
+          <span class="gh-button gh-button--icon"><Octicon name="sidebar-expand" /></span>
+          <span class="gh-button">All commits<Octicon name="triangle-down" /></span>
+          <span class="gh-files__viewed">
+            <svg class="gh-files__ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" /><circle class="gh-files__ring-done" cx="8" cy="8" r="6.5" data-viewed-done /></svg>
+            <span class="gh-swap"><span data-viewed-before>0 / {files} viewed</span><span data-viewed-done>{files} / {files} viewed</span></span>
+          </span>
+          <span class="gh-button gh-button--primary" data-open-review>Review changes<Octicon name="triangle-down" /></span>
+        </div>
+
+        <div class="gh-file">
+          <div class="gh-file__header" data-file-header>
+            <span class="gh-button gh-button--icon gh-button--invisible"><Octicon name="chevron-down" /></span>
+            <span class="gh-file__path">{path}</span>
+            <span class="gh-button gh-button--icon gh-button--invisible"><Octicon name="copy" /></span>
+            <Octicon name="file-diff" class="gh-file__icon" />
+            <span class="gh-file__end">
+              <span class="gh-diffstat__added">+{additions}</span><span class="gh-diffstat__deleted">−{deletions}</span>
+              <span class="gh-diffstat__squares">{squares.map((kind) => <i class={`is-${kind}`} />)}</span>
+              <span class="gh-button gh-file__viewed" data-viewed-button>
+                <span class="gh-swap"><span data-viewed-before><Octicon name="square" /></span><span data-viewed-done><Octicon name="square-checked" /></span></span>Viewed
+              </span>
+              <span class="gh-button gh-button--icon gh-button--invisible"><Octicon name="kebab-horizontal" /></span>
+            </span>
+          </div>
+          <!-- Marked Viewed, GitHub collapses the file to its header; the markup holds that final state. -->
+          <div class="gh-file__body" data-file-body>
+          <table class="gh-diff">
+            <colgroup><col class="gh-diff__number-column" /><col class="gh-diff__number-column" /><col /></colgroup>
+            <tbody>
+              {
+                hunks.map((hunk) => (
+                  <>
+                    <tr class="gh-diff__hunk">
+                      <td colspan="2" class="gh-diff__expand"><Octicon name="fold-up" /></td>
+                      <td class="gh-diff__code">{hunk.header}</td>
+                    </tr>
+                    {hunk.lines.map((line) => (
+                      <tr class={`gh-diff__line gh-diff__line--${line.kind}`}>
+                        <td class="gh-diff__number">{line.old}</td>
+                        <td class="gh-diff__number">{line.new}</td>
+                        <td class="gh-diff__code">{line.code.map(([text, kind]) => (kind ? <span class={`gh-syntax--${kind}`}>{text}</span> : text))}</td>
+                      </tr>
+                    ))}
+                  </>
+                ))
+              }
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      {
+        views.map((view) => (
+          <div
+            class:list={['gh-conversation', `gh-conversation--${view.id}`]}
+            data-awaiting-review={view.id === 'awaiting' ? '' : undefined}
+            data-submitted-review={view.id === 'submitted' ? '' : undefined}
+          >
+            {view.scrolled && (
+              <div class="gh-sticky">
+                <span class="gh-label gh-label--open"><Octicon name="git-pull-request" />Open</span>
+                <span class="gh-sticky__text">
+                  <span class="gh-sticky__title">
+                    {title} <span class="gh-pull__number">#{number}</span>
+                  </span>
+                  <span class="gh-sticky__meta">
+                    <strong>{login}</strong> wants to merge {commits} {commitWord} into <code class="gh-branch">main</code> from <code class="gh-branch">{branch}</code>
+                  </span>
+                </span>
+              </div>
+            )}
+            <div class="gh-conversation__layout">
+              <div class="gh-timeline">
+                {view.items.map((item) =>
+                  item.kind === 'description' ? (
+                    <div class="gh-comment-group">
+                      <Identicon person={item.author} size={40} round class="gh-gutter-avatar" />
+                      <div class="gh-comment">
+                        <div class="gh-comment__header">
+                          <span>
+                            <strong>{item.author.github.login}</strong> commented {item.time}
+                          </span>
+                          <span class="gh-role">Member</span>
+                          <Octicon name="kebab-horizontal" class="gh-muted" />
+                        </div>
+                        <p class="gh-comment__body">{item.body}</p>
+                      </div>
+                    </div>
+                  ) : item.kind === 'commit' ? (
+                    <div class="gh-event gh-event--condensed">
+                      <span class="gh-event__badge"><Octicon name="git-commit" /></span>
+                      <span class="gh-event__body">
+                        <Identicon person={author} size={20} round />
+                        <span class="gh-event__commit">{commit.message}</span>
+                        <span class="gh-event__sha"><Octicon name="check" class="gh-success" />{commit.sha}</span>
+                      </span>
+                    </div>
+                  ) : item.kind === 'requested' ? (
+                    <div class="gh-event gh-event--condensed">
+                      <span class="gh-event__badge"><Octicon name="eye" /></span>
+                      <span class="gh-event__body">
+                        <Identicon person={item.actor} size={20} round />
+                        <span>
+                          <strong>{item.actor.github.login}</strong> requested a review from <strong>{item.reviewer.github.login}</strong> {item.time}
+                        </span>
+                      </span>
+                    </div>
+                  ) : item.kind === 'review' ? (
+                    <div class="gh-review">
+                      <div class="gh-event">
+                        <Identicon person={item.reviewer} size={40} round class="gh-event__avatar" />
+                        <span class="gh-event__badge gh-event__badge--success"><Octicon name="check" /></span>
+                        <span class="gh-event__body">
+                          <span>
+                            <strong>{item.reviewer.github.login}</strong> approved these changes {item.time}
+                          </span>
+                          <span class="gh-button gh-event__aside">View reviewed changes</span>
+                        </span>
+                      </div>
+                      {item.comment && (
+                        <div class="gh-comment gh-review__comment">
+                          <div class="gh-comment__header">
+                            <span>
+                              <strong>{item.reviewer.github.login}</strong> left a comment
+                            </span>
+                            <Octicon name="kebab-horizontal" class="gh-muted" />
+                          </div>
+                          <p class="gh-comment__body">{item.comment}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div class="gh-merge-stack">
+                      <div class="gh-merge gh-merge--ready">
+                        <span class="gh-merge__icon"><Octicon name="git-merge" /></span>
+                        <div class="gh-merge__box">
+                          <div class="gh-merge__section">
+                            <span class="gh-merge__status gh-merge__status--success"><Octicon name="check" /></span>
+                            <span class="gh-merge__text"><strong>Changes approved</strong><span class="gh-muted">1 approving review by reviewers with write access.</span></span>
+                          </div>
+                          <div class="gh-merge__section">
+                            <span class="gh-merge__status gh-merge__status--success"><Octicon name="check" /></span>
+                            <span class="gh-merge__text"><strong>All checks have passed</strong><span class="gh-muted">{checks} successful checks</span></span>
+                          </div>
+                          <div class="gh-merge__section">
+                            <span class="gh-merge__status gh-merge__status--success"><Octicon name="check" /></span>
+                            <span class="gh-merge__text"><strong>No conflicts with base branch</strong><span class="gh-muted">Merging can be performed automatically.</span></span>
+                          </div>
+                          <div class="gh-merge__footer">
+                            <span class="gh-split gh-split--primary"><span class="gh-split__main">Merge pull request</span><span class="gh-split__caret"><Octicon name="triangle-down" /></span></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+
+              <aside class="gh-sidebar">
+                {view.sidebar.map((side) =>
+                  side.kind === 'people' ? (
+                    <div class="gh-sidebar__item">
+                      <span class="gh-sidebar__label">{side.label}</span>
+                      {side.person ? (
+                        <span class="gh-sidebar__person">
+                          <Identicon person={side.person} size={20} round />
+                          <strong>{side.person.github.login}</strong>
+                          {side.status === 'awaiting' && <Octicon name="dot-fill" class="gh-attention" />}
+                        </span>
+                      ) : (
+                        <span class="gh-muted">{side.label === 'Reviewers' ? 'No reviews' : 'No one assigned'}</span>
+                      )}
+                    </div>
+                  ) : side.kind === 'text' ? (
+                    <div class="gh-sidebar__item">
+                      <span class="gh-sidebar__label">{side.label}</span>
+                      <span class="gh-muted">{side.text}</span>
+                    </div>
+                  ) : side.kind === 'development' ? (
+                    <div class="gh-sidebar__item">
+                      <span class="gh-sidebar__label">Development</span>
+                      <span class="gh-muted">Successfully merging this pull request may close these issues.</span>
+                      <span class="gh-muted">None yet</span>
+                    </div>
+                  ) : side.kind === 'notifications' ? (
+                    <div class="gh-sidebar__item">
+                      <span class="gh-sidebar__label">Notifications</span>
+                      <span class="gh-button gh-sidebar__button"><Octicon name="bell" />Unsubscribe</span>
+                      <span class="gh-muted">You’re receiving notifications because your review was requested.</span>
+                    </div>
+                  ) : (
+                    <div class="gh-sidebar__item">
+                      <span class="gh-sidebar__label">{side.people.length} participants</span>
+                      <span class="gh-sidebar__avatars">{side.people.map((person) => <Identicon person={person} size={26} round />)}</span>
+                    </div>
+                  ),
+                )}
+              </aside>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+  </div>
+
+  <!-- GitHub's compact header, pinned at the top once the title has scrolled away while the files are read. -->
+  <div class="gh-files-sticky" data-files-sticky>
+    <div class="gh-sticky">
+      <span class="gh-label gh-label--open"><Octicon name="git-pull-request" />Open</span>
+      <span class="gh-sticky__text">
+        <span class="gh-sticky__title">{title} <span class="gh-pull__number">#{number}</span></span>
+        <span class="gh-sticky__meta"><strong>{login}</strong> wants to merge {commits} {commitWord} into <code class="gh-branch">main</code> from <code class="gh-branch">{branch}</code></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="gh-dialog" data-review-form role="dialog" aria-label="Finish your review">
+    <div class="gh-dialog__header">
+      <strong>Finish your review</strong>
+      <span class="gh-button gh-button--icon gh-button--invisible gh-dialog__close"><Octicon name="x" /></span>
+    </div>
+    <div class="gh-dialog__body">
+      <div class="gh-editor">
+        <div class="gh-editor__tabs">
+          <span class="gh-editor__tab is-current">Write</span>
+          <span class="gh-editor__tab">Preview</span>
+        </div>
+        <div class="gh-editor__input">
+          <span class="gh-editor__line">
+            <span data-review-comment>{review?.comment}</span>
+            <span class="gh-editor__caret" data-review-caret></span>
+          </span>
+        </div>
+      </div>
+      <div class="gh-radios">
+        {
+          radios.map((radio) => (
+            <span class="gh-radio" data-approve-option={radio.label === 'Approve' ? '' : undefined}>
+              <span class:list={['gh-radio__control', { 'is-checked': radio.label === 'Comment' }]}>
+                {radio.label === 'Approve' && <span class="gh-radio__approval" data-approval-check />}
+              </span>
+              <strong>{radio.label}</strong>
+              <span class="gh-radio__hint">{radio.hint}</span>
+            </span>
+          ))
+        }
+      </div>
+    </div>
+    <div class="gh-dialog__footer">
+      <span class="gh-button gh-button--medium">Cancel</span>
+      <span class="gh-button gh-button--medium gh-button--primary" data-submit-review>Submit review</span>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  @layer components {
+    .gh-pull {
+      --gh-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      position: relative;
+      block-size: 100%;
+      overflow: clip;
+      background: var(--primer-bg);
+      color: var(--primer-ink);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.5;
+
+      & strong {
+        font-weight: 600;
+      }
+
+      & code {
+        font-family: var(--gh-mono);
+      }
+    }
+
+    .gh-muted {
+      color: var(--primer-ink-2);
+    }
+
+    .gh-success {
+      color: var(--primer-success-ink);
+    }
+
+    .gh-attention {
+      color: #9a6700;
+    }
+
+    /* The header: a 52px top bar and a 48px repository tab bar on one inset band. */
+    .gh-pull__header {
+      background: var(--primer-inset);
+      box-shadow: inset 0 -1px 0 var(--primer-border);
+    }
+
+    .gh-pull__top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      block-size: 52px;
+      padding: 16px 16px 4px;
+    }
+
+    .gh-header-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      inline-size: 32px;
+      block-size: 32px;
+      border: 1px solid var(--primer-border);
+      border-radius: 6px;
+      color: var(--primer-ink-2);
+    }
+
+    .gh-header-button--menu {
+      inline-size: auto;
+      padding-inline: 7px 5px;
+      gap: 2px;
+    }
+
+    .gh-pull__crumbs {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-inline-size: 0;
+      white-space: nowrap;
+    }
+
+    .gh-pull__crumb {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 24px;
+      color: var(--primer-ink);
+    }
+
+    .gh-pull__crumb--repository {
+      font-weight: 600;
+    }
+
+    /* A neutral organisation mark in the owner's avatar slot. */
+    .gh-pull__org {
+      display: inline-grid;
+      place-items: center;
+      inline-size: 16px;
+      block-size: 16px;
+      border-radius: 50%;
+      background: var(--primer-bg);
+      box-shadow: 0 0 0 1px var(--primer-border);
+      color: var(--primer-ink-2);
+    }
+
+    .gh-pull__slash {
+      position: relative;
+      inline-size: 8px;
+      block-size: 24px;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 6.5px auto auto 3.5px;
+        inline-size: 1px;
+        block-size: 11px;
+        background: var(--primer-ink-2);
+        rotate: 15deg;
+      }
+    }
+
+    .gh-pull__search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 1 272px;
+      min-inline-size: 0;
+      block-size: 32px;
+      padding-inline: 12px;
+      border: 1px solid var(--primer-border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--primer-ink-2);
+      white-space: nowrap;
+      overflow: clip;
+
+      & kbd {
+        display: inline-grid;
+        place-items: center;
+        min-inline-size: 16px;
+        block-size: 16px;
+        padding-inline: 3px;
+        border: 1px solid var(--primer-ink-2);
+        border-radius: 3px;
+        font-family: inherit;
+        font-size: 11px;
+        line-height: 1;
+        color: var(--primer-ink-2);
+      }
+    }
+
+    .gh-pull__search-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+      color: var(--primer-control-ink);
+    }
+
+    .gh-pull__nav {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      block-size: 48px;
+      padding: 8px 16px 0;
+    }
+
+    .gh-repository-tab {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 20px;
+      color: var(--primer-ink);
+      white-space: nowrap;
+
+      & > .octicon {
+        margin-inline-end: 8px;
+        color: var(--primer-ink-2);
+      }
+
+      & .gh-counter {
+        margin-inline-start: 8px;
+      }
+
+      &.is-current {
+        font-weight: 600;
+      }
+
+      &.is-current::after {
+        content: '';
+        position: absolute;
+        inset: auto 0 -8px;
+        block-size: 2px;
+        background: var(--primer-tab-underline);
+      }
+    }
+
+    /* At this width the tabs after Projects fold into More, at the bar's end behind a divider. */
+    .gh-repository-tab--more {
+      margin-inline-start: auto;
+
+      & > .octicon {
+        margin-inline: 4px 0;
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 4px auto 4px -9px;
+        inline-size: 1px;
+        background: var(--primer-border);
+      }
+    }
+
+    .gh-counter {
+      display: inline-grid;
+      place-items: center;
+      min-inline-size: 20px;
+      padding: 2px 6px;
+      border-radius: 20px;
+      background: var(--primer-neutral-muted);
+      color: var(--primer-ink);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 18px;
+    }
+
+    /* Buttons: 28px small by default, 32px medium. */
+    .gh-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex: none;
+      block-size: 28px;
+      padding: 0 8px;
+      border: 1px solid var(--primer-border);
+      border-radius: 6px;
+      background: var(--primer-button-bg);
+      box-shadow: var(--primer-button-shadow);
+      color: var(--primer-control-ink);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+
+      & > .octicon {
+        color: var(--primer-ink-2);
+      }
+    }
+
+    .gh-button--medium {
+      block-size: 32px;
+      padding-inline: 12px;
+      font-size: 14px;
+    }
+
+    .gh-button--icon {
+      inline-size: 28px;
+      padding: 0;
+    }
+
+    .gh-button--invisible {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .gh-button--primary {
+      border-color: var(--primer-button-primary-edge);
+      background: var(--primer-green);
+      box-shadow: var(--primer-button-primary-shadow);
+      color: var(--primer-on-emphasis);
+
+      & > .octicon {
+        color: inherit;
+      }
+    }
+
+    /* The pull request's header. */
+    .gh-pull__content {
+      padding: 24px 24px 0;
+    }
+
+    .gh-pull__title-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .gh-pull__title {
+      flex: 1;
+      min-inline-size: 0;
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 40px;
+      letter-spacing: 0;
+      overflow-wrap: break-word;
+      text-wrap: wrap;
+    }
+
+    .gh-pull__number {
+      font-weight: 300;
+      color: var(--primer-ink-2);
+    }
+
+    .gh-pull__actions {
+      display: flex;
+      gap: 8px;
+      margin-block-start: 6px;
+    }
+
+    .gh-pull__meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-block-start: 8px;
+    }
+
+    .gh-pull__summary {
+      flex: 1;
+      min-inline-size: 0;
+      color: var(--primer-ink-2);
+
+      & strong {
+        color: var(--primer-ink);
+      }
+    }
+
+    .gh-pull__copy {
+      display: inline-block;
+      margin-inline-start: 6px;
+      vertical-align: -3px;
+      color: var(--primer-ink-2);
+    }
+
+    .gh-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      block-size: 32px;
+      padding: 8px 12px;
+      border-radius: 2em;
+      color: var(--primer-on-emphasis);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 16px;
+      white-space: nowrap;
+    }
+
+    .gh-label--open {
+      background: var(--primer-green);
+      box-shadow: inset 0 0 0 1px var(--primer-green-edge);
+    }
+
+    .gh-branch {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: var(--primer-accent-muted);
+      color: var(--primer-blue);
+      font-size: 12px;
+      line-height: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    /* The pull request's tabs: the current one is a bordered tab standing on the nav's bottom line. */
+    .gh-tabs {
+      display: flex;
+      align-items: flex-end;
+      block-size: 40px;
+      margin-block-start: 16px;
+      border-block-end: 1px solid var(--primer-border);
+    }
+
+    .gh-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      block-size: 40px;
+      margin-block-end: -1px;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-block-end: 0;
+      border-radius: 6px 6px 0 0;
+      color: var(--primer-ink);
+      line-height: 20px;
+      white-space: nowrap;
+
+      & > .octicon {
+        color: var(--primer-ink-2);
+      }
+
+      &.is-current {
+        border-color: var(--primer-border);
+        background: var(--primer-bg);
+      }
+    }
+
+    .gh-diffstat,
+    .gh-file__end {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .gh-diffstat {
+      align-self: center;
+      margin-inline-start: auto;
+    }
+
+    .gh-diffstat__added {
+      color: var(--primer-success-ink);
+    }
+
+    .gh-diffstat__deleted {
+      color: var(--primer-danger-ink);
+    }
+
+    .gh-diffstat__squares {
+      display: inline-flex;
+      gap: 1px;
+      margin-inline-start: 4px;
+
+      & i {
+        inline-size: 8px;
+        block-size: 8px;
+        border-radius: 2px;
+        background: var(--primer-neutral-muted);
+      }
+
+      & .is-add {
+        background: var(--primer-green);
+      }
+
+      & .is-delete {
+        background: var(--primer-red);
+      }
+    }
+
+    /* Files changed and the opening Conversation share one grid cell; the scrolled Conversation covers the whole page. */
+    .gh-pull__stage {
+      display: grid;
+
+      & > :not(.gh-conversation--submitted) {
+        grid-area: 1 / 1;
+        min-inline-size: 0;
+      }
+    }
+
+    /* Files changed. */
+    /* A before and after pair shares one cell; the markup shows the file as viewed, the final frame. */
+    .gh-swap {
+      display: inline-grid;
+
+      & > * {
+        grid-area: 1 / 1;
+      }
+    }
+
+    .gh-pull [data-viewed-before] {
+      opacity: 0;
+    }
+
+    /* While the files are read the toolbar and the file header stay pinned, so they cover the diff sliding under them. */
+    .gh-files__toolbar {
+      position: relative;
+      z-index: 2;
+      background: var(--primer-bg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      block-size: 61px;
+      padding-block: 16px;
+      border-block-end: 1px solid var(--primer-border);
+    }
+
+    .gh-files__viewed {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-inline: auto 8px;
+      font-size: 12px;
+      color: var(--primer-ink-2);
+    }
+
+    .gh-files__ring circle {
+      fill: none;
+      stroke: var(--primer-border);
+      stroke-width: 2;
+    }
+
+    .gh-files__ring .gh-files__ring-done {
+      stroke: var(--primer-success-ink);
+    }
+
+    .gh-file {
+      margin-block-start: 16px;
+    }
+
+    .gh-file__header {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      block-size: 42px;
+      padding: 6px 8px;
+      border: 1px solid var(--primer-border);
+      /* Collapsed once viewed, the header stands alone with all four corners rounded. */
+      border-radius: 6px;
+      background: var(--primer-bg-2);
+
+      & > .gh-button > .octicon {
+        color: var(--primer-ink-2);
+      }
+    }
+
+    .gh-file__path {
+      font-family: var(--gh-mono);
+      font-size: 12px;
+      color: var(--primer-ink);
+    }
+
+    .gh-file__icon {
+      color: var(--primer-success-ink);
+    }
+
+    .gh-file__end {
+      margin-inline-start: auto;
+
+      & .gh-button {
+        font-weight: 500;
+      }
+    }
+
+    .gh-file__viewed {
+      inline-size: 80px;
+      margin-inline-start: 8px;
+      gap: 6px;
+    }
+
+    .gh-file__body {
+      block-size: 0;
+      overflow: clip;
+    }
+
+    .gh-files-sticky {
+      position: absolute;
+      inset: 0 0 auto;
+      z-index: 3;
+      padding-inline: 24px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .gh-diff {
+      inline-size: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      border: 1px solid var(--primer-border);
+      border-block-start: 0;
+      font-family: var(--gh-mono);
+      font-size: 12px;
+      line-height: 20px;
+    }
+
+    /* A table's border radius needs separate borders, so the box's bottom corners are left square. */
+    .gh-diff__number-column {
+      inline-size: 40px;
+    }
+
+    .gh-diff :where(td) {
+      block-size: 20px;
+      padding: 0;
+      vertical-align: top;
+    }
+
+    .gh-diff__number {
+      padding-inline: 8px;
+      text-align: end;
+      color: var(--primer-ink-2);
+    }
+
+    .gh-diff__code {
+      padding-inline: 24px;
+      white-space: pre;
+      overflow: clip;
+      color: var(--primer-ink);
+    }
+
+    .gh-diff__hunk td {
+      background: var(--primer-diff-hunk);
+      color: var(--primer-ink-2);
+    }
+
+    .gh-diff__hunk .gh-diff__expand {
+      background: var(--primer-diff-hunk-number);
+      text-align: center;
+
+      & .octicon {
+        display: block;
+        margin: 2px auto;
+      }
+    }
+
+    .gh-diff__line--add {
+      & .gh-diff__number {
+        background: var(--primer-diff-add-number);
+        color: var(--primer-ink);
+      }
+
+      & .gh-diff__code {
+        background: var(--primer-diff-add);
+      }
+    }
+
+    .gh-diff__line--delete {
+      & .gh-diff__number {
+        background: var(--primer-diff-delete-number);
+        color: var(--primer-ink);
+      }
+
+      & .gh-diff__code {
+        background: var(--primer-diff-delete);
+      }
+    }
+
+    .gh-syntax--keyword {
+      color: var(--primer-syntax-keyword);
+    }
+
+    .gh-syntax--constant {
+      color: var(--primer-syntax-constant);
+    }
+
+    .gh-syntax--string {
+      color: var(--primer-syntax-string);
+    }
+
+    .gh-syntax--entity {
+      color: var(--primer-syntax-entity);
+    }
+
+    .gh-syntax--comment {
+      color: var(--primer-ink-2);
+    }
+
+    /* Conversation. The opening view and the scrolled view cover Files changed until their scripts hide them. */
+    .gh-conversation {
+      background: var(--primer-bg);
+    }
+
+    .gh-conversation--awaiting {
+      opacity: 0;
+    }
+
+    .gh-conversation__layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 16px;
+      padding-block-start: 16px;
+    }
+
+    /* Avatars sit in a 56px gutter; the timeline's 2px line runs 16px into the column, 72px from the gutter's edge. */
+    .gh-timeline {
+      padding-inline-start: 56px;
+    }
+
+    .gh-gutter-avatar {
+      position: absolute;
+      inset: 0 auto auto -56px;
+    }
+
+    .gh-comment-group {
+      position: relative;
+    }
+
+    .gh-comment {
+      border: 1px solid var(--primer-border);
+      border-radius: 6px;
+      background: var(--primer-bg);
+    }
+
+    .gh-comment__header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      block-size: 40px;
+      padding-inline: 16px;
+      border-block-end: 1px solid var(--primer-border);
+      border-radius: 6px 6px 0 0;
+      background: var(--primer-bg-2);
+      color: var(--primer-ink-2);
+
+      & > span:first-child {
+        flex: 1;
+        min-inline-size: 0;
+        white-space: nowrap;
+        overflow: clip;
+        text-overflow: ellipsis;
+      }
+
+      & strong {
+        color: var(--primer-ink);
+      }
+    }
+
+    .gh-role {
+      padding-inline: 7px;
+      border: 1px solid var(--primer-border);
+      border-radius: 2em;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 18px;
+    }
+
+    .gh-comment__body {
+      padding: 16px;
+    }
+
+    .gh-event {
+      position: relative;
+      display: flex;
+      margin-inline-start: 16px;
+      padding-block: 16px;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0 auto 0 0;
+        inline-size: 2px;
+        background: var(--primer-border-muted);
+      }
+    }
+
+    .gh-event--condensed {
+      padding-block: 4px;
+    }
+
+    .gh-event__avatar {
+      position: absolute;
+      inset: 16px auto auto -72px;
+      z-index: 1;
+    }
+
+    .gh-event__badge {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      flex: none;
+      inline-size: 32px;
+      block-size: 32px;
+      margin-inline: -15px 8px;
+      border: 2px solid var(--primer-bg);
+      border-radius: 50%;
+      background: var(--primer-bg-2);
+      color: var(--primer-ink-2);
+    }
+
+    .gh-event--condensed .gh-event__badge {
+      block-size: 16px;
+      margin-block: 8px;
+      border: 0;
+      background: var(--primer-bg);
+    }
+
+    .gh-event__badge--success {
+      background: var(--primer-green);
+      color: var(--primer-on-emphasis);
+    }
+
+    .gh-event__body {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-inline-size: 0;
+      min-block-size: 32px;
+      color: var(--primer-ink-2);
+
+      & strong {
+        color: var(--primer-ink);
+      }
+    }
+
+    .gh-event__commit {
+      flex: 1;
+      min-inline-size: 0;
+      font-family: var(--gh-mono);
+      font-size: 12px;
+      text-decoration: underline dotted;
+      text-underline-offset: 3px;
+      white-space: nowrap;
+      overflow: clip;
+      text-overflow: ellipsis;
+    }
+
+    .gh-event__sha {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--gh-mono);
+      font-size: 12px;
+    }
+
+    .gh-event__aside {
+      margin-inline-start: auto;
+    }
+
+    .gh-review__comment {
+      margin-inline-start: 41px;
+      margin-block-end: 0;
+    }
+
+    .gh-review {
+      position: relative;
+
+      &:has(.gh-review__comment)::after {
+        content: '';
+        position: absolute;
+        inset: 64px auto 0 16px;
+        inline-size: 2px;
+        background: var(--primer-border-muted);
+      }
+    }
+
+    /* The merge box: a 40px state square in the avatar gutter, then the bordered checks and the merge button. */
+    /* The timeline runs on 16px past its last item before the 2px rule that opens the merge box, as on GitHub. */
+    .gh-merge-stack {
+      display: grid;
+      margin-block-start: 16px;
+      padding-block-start: 16px;
+      border-block-start: 2px solid var(--primer-border);
+      margin-inline-start: -56px;
+      padding-inline-start: 56px;
+    }
+
+    .gh-merge {
+      position: relative;
+      background: var(--primer-bg);
+    }
+
+    .gh-merge__icon {
+      position: absolute;
+      inset: 0 auto auto -56px;
+      display: grid;
+      place-items: center;
+      inline-size: 40px;
+      block-size: 40px;
+      border-radius: 6px;
+      color: var(--primer-on-emphasis);
+
+      & .octicon {
+        inline-size: 24px;
+        block-size: 24px;
+      }
+    }
+
+    .gh-merge--ready .gh-merge__icon {
+      background: var(--primer-green);
+    }
+
+    .gh-merge__box {
+      border: 1px solid var(--primer-border);
+      border-radius: 6px;
+      background: var(--primer-bg);
+    }
+
+    .gh-merge__section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-block-end: 1px solid var(--primer-border);
+    }
+
+    .gh-merge__text {
+      display: grid;
+      flex: 1;
+      min-inline-size: 0;
+
+      & .gh-muted {
+        font-size: 12px;
+      }
+    }
+
+    .gh-merge__status {
+      display: grid;
+      place-items: center;
+      flex: none;
+      inline-size: 32px;
+      block-size: 32px;
+      border-radius: 50%;
+      color: var(--primer-on-emphasis);
+    }
+
+    .gh-merge__status--success {
+      background: var(--primer-green);
+    }
+
+    .gh-merge__footer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+    }
+
+    .gh-split {
+      display: inline-flex;
+      align-items: stretch;
+      flex: none;
+      block-size: 32px;
+      border: 1px solid var(--primer-border);
+      border-radius: 6px;
+      background: var(--primer-button-bg);
+      box-shadow: var(--primer-button-shadow);
+      color: var(--primer-ink-2);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: clip;
+    }
+
+    .gh-split__main {
+      display: inline-flex;
+      align-items: center;
+      padding-inline: 12px;
+    }
+
+    .gh-split__caret {
+      display: grid;
+      place-items: center;
+      inline-size: 30px;
+      border-inline-start: 1px solid var(--primer-border);
+    }
+
+    .gh-split--primary {
+      border-color: var(--primer-button-primary-edge);
+      background: var(--primer-green);
+      box-shadow: var(--primer-button-primary-shadow);
+      color: var(--primer-on-emphasis);
+
+      & .gh-split__caret {
+        border-inline-start-color: var(--primer-button-primary-edge);
+      }
+    }
+
+    .gh-sidebar {
+      display: grid;
+      align-content: start;
+    }
+
+    .gh-sidebar__item {
+      display: grid;
+      justify-items: start;
+      gap: 6px;
+      padding-block: 0 16px;
+      margin-block-end: 16px;
+      border-block-end: 1px solid var(--primer-border-muted);
+      font-size: 12px;
+    }
+
+    .gh-sidebar__label {
+      font-weight: 600;
+      color: var(--primer-ink-2);
+    }
+
+    .gh-sidebar__person {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-self: stretch;
+
+      & strong {
+        flex: 1;
+      }
+    }
+
+    .gh-sidebar__button {
+      justify-self: stretch;
+    }
+
+    .gh-sidebar__avatars {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* The Conversation after a submitted review: scrolled to the review under GitHub's sticky header. */
+    .gh-conversation--submitted {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      padding-inline: 24px;
+      overflow: clip;
+    }
+
+    .gh-sticky {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-inline: -24px;
+      padding: 8px 24px;
+      border-block-end: 1px solid var(--primer-border);
+      background: var(--primer-bg);
+    }
+
+    .gh-sticky__text {
+      display: grid;
+      min-inline-size: 0;
+    }
+
+    .gh-sticky__title {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: clip;
+      text-overflow: ellipsis;
+
+      & .gh-pull__number {
+        font-weight: 400;
+      }
+    }
+
+    .gh-sticky__meta {
+      font-size: 12px;
+      color: var(--primer-ink-2);
+      white-space: nowrap;
+      overflow: clip;
+      text-overflow: ellipsis;
+
+      & strong {
+        color: var(--primer-ink);
+      }
+
+      & .gh-branch {
+        padding-block: 0;
+      }
+    }
+
+    /* The review dialog. It cannot fit below or above its button at this height, so it keeps to the page's bottom. */
+    .gh-dialog {
+      position: absolute;
+      inset: auto 24px 8px auto;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      inline-size: min(640px, 100% - 32px);
+      border-radius: 12px;
+      background: var(--primer-overlay-bg);
+      box-shadow: var(--primer-overlay-shadow);
+      opacity: 0;
+    }
+
+    .gh-dialog__header {
+      display: flex;
+      align-items: center;
+      block-size: 49px;
+      padding: 8px 8px 8px 16px;
+      border-block-end: 1px solid var(--primer-border);
+
+      & strong {
+        flex: 1;
+      }
+    }
+
+    .gh-dialog__close {
+      inline-size: 32px;
+      block-size: 32px;
+    }
+
+    .gh-dialog__body {
+      padding: 16px;
+    }
+
+    .gh-editor {
+      border: 1px solid var(--primer-border);
+      border-radius: 6px;
+    }
+
+    .gh-editor__tabs {
+      display: flex;
+      block-size: 38px;
+      padding: 0 8px;
+      border-block-end: 1px solid var(--primer-border);
+      border-radius: 6px 6px 0 0;
+      background: var(--primer-bg-2);
+    }
+
+    .gh-editor__tab {
+      margin-block: 0 -1px;
+      padding: 9px 16px;
+      border: 1px solid transparent;
+      border-block-end: 0;
+      border-radius: 6px 6px 0 0;
+      color: var(--primer-ink-2);
+      line-height: 19px;
+      margin-block-start: 0;
+      align-self: end;
+
+      &.is-current {
+        border-color: var(--primer-border);
+        background: var(--primer-overlay-bg);
+        color: var(--primer-ink);
+      }
+    }
+
+    .gh-editor__input {
+      min-block-size: 64px;
+      padding: 8px;
+      font-size: 14px;
+      line-height: 21px;
+    }
+
+    /* The typed comment: one clipped, left-aligned line, with the caret starting at its first character. */
+    .gh-editor__line {
+      position: relative;
+      display: block;
+      white-space: nowrap;
+    }
+
+    [data-review-comment] {
+      display: inline-block;
+      max-inline-size: 100%;
+    }
+
+    .gh-editor__caret {
+      position: absolute;
+      inset: 2px auto auto 0;
+      inline-size: 1px;
+      block-size: 17px;
+      background: var(--primer-ink);
+      opacity: 0;
+    }
+
+    .gh-radios {
+      --gh-radio-pitch: 47px;
+      display: grid;
+      gap: 9px;
+      margin-block-start: 16px;
+    }
+
+    /* Each row is as wide as its text, so a click at its centre lands on the label. */
+    .gh-radio {
+      display: grid;
+      justify-self: start;
+      grid-template-columns: 16px auto;
+      column-gap: 8px;
+      align-items: center;
+      line-height: 20px;
+    }
+
+    .gh-radio__hint {
+      grid-column: 2;
+      font-size: 12px;
+      line-height: 18px;
+      color: var(--primer-ink-2);
+    }
+
+    .gh-radio__control {
+      position: relative;
+      inline-size: 16px;
+      block-size: 16px;
+      border: 1px solid var(--primer-ink-2);
+      border-radius: 50%;
+      background: var(--primer-overlay-bg);
+
+      &.is-checked {
+        border: 4px solid var(--primer-blue);
+      }
+    }
+
+    /* Approve's checked ring; its ::after redraws Comment's radio empty, so one hook moves the selection. */
+    .gh-radio__approval {
+      position: absolute;
+      inset: -1px;
+      border: 4px solid var(--primer-blue);
+      border-radius: 50%;
+      background: var(--primer-overlay-bg);
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -4px auto auto -4px;
+        translate: 0 calc(-1 * var(--gh-radio-pitch));
+        inline-size: 16px;
+        block-size: 16px;
+        box-sizing: border-box;
+        border: 1px solid var(--primer-ink-2);
+        border-radius: 50%;
+        background: var(--primer-overlay-bg);
+      }
+    }
+
+    .gh-dialog__footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px;
+      border-block-start: 1px solid var(--primer-border);
+    }
+  }
+</style>

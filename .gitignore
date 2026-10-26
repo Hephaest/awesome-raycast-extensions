@@ -6,3 +6,8 @@
 # misc
 .DS_Store
 raycast-env.d.ts
+
+# site
+/site/node_modules
+/site/dist
+/site/.astro

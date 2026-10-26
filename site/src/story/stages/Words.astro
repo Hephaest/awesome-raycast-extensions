@@ -1,0 +1,178 @@
+---
+import Window from '../mocks/raycast/Window.astro';
+import WindowFit from '../desktop/WindowFit.astro';
+import SearchBar from '../mocks/raycast/SearchBar.astro';
+import ActionBar from '../mocks/raycast/ActionBar.astro';
+import List from '../mocks/raycast/List.astro';
+import Section from '../mocks/raycast/Section.astro';
+import Row from '../mocks/raycast/Row.astro';
+import Detail from '../mocks/raycast/Detail.astro';
+import Metadata from '../mocks/raycast/Metadata.astro';
+import Keystroke from '../mocks/Keystroke.astro';
+import BrowserFrame from '../mocks/browser/BrowserFrame.astro';
+import DocumentationPage from '../mocks/browser/DocumentationPage.astro';
+import KeelsonMark from '../mocks/browser/KeelsonMark.astro';
+import Cursor from '../mocks/mac/Cursor.astro';
+import { dictionaryEntry as entry, documentation } from '../story';
+
+/*
+ * The dictionary opens over Keelson's guide on the first sense, and one Down moves to the second, the sense the guide
+ * means. Neither pronunciation has a recording, so the primary action copies the definition.
+ */
+const sense = entry.highlightedSense;
+---
+
+<div class="words-stage">
+  <WindowFit width={840} height={600}>
+  <BrowserFrame
+    id="words"
+    title={`${documentation.title} - ${documentation.vendor}`}
+    address={documentation.address}
+    x={0}
+    y={0}
+    width={840}
+    height={600}
+  >
+    <KeelsonMark slot="favicon" />
+    <DocumentationPage />
+  </BrowserFrame>
+  </WindowFit>
+
+  <Keystroke
+    name="hotkey"
+    class="words-stage__chord"
+    keys={[{ key: '⌃', id: 'words-control' }, { key: '⌥', id: 'words-option' }, { key: 'D', id: 'words-d' }]}
+  />
+
+  <WindowFit width={750} height={475}>
+  <Window id="words" class="words-stage__window">
+    <SearchBar slot="search" placeholder="Filter meanings..." dropdown="Wiktionary" />
+    <div class="rc-split">
+      <List split>
+        <Section title={entry.partOfSpeech} />
+        {entry.senses.map((definition, index) => <Row id={`sense-${index + 1}`} title={`${index + 1}. ${definition}`} selected={index === sense} />)}
+      </List>
+      <Detail heading={entry.word} level={1}>
+        <div class="words-stage__senses">
+          {entry.senses.slice(0, sense + 1).map((definition, index) => (
+            <p data-sense={index + 1}><strong>{index + 1}.</strong> {definition}</p>
+          ))}
+        </div>
+        <Metadata slot="metadata" rows={[
+          ...entry.pronunciations.map((pronunciation) => ({ label: pronunciation.accent, value: pronunciation.text })),
+          { label: 'Part of Speech', value: entry.partOfSpeech, tag: true },
+          { label: 'Source', value: 'Wiktionary', link: true },
+          { label: 'License', value: 'Adapted, CC BY-SA 4.0', link: true },
+        ]} />
+      </Detail>
+    </div>
+    <ActionBar slot="footer" extension="english-dictionary" command={entry.word} action="Copy Definition" />
+    <Keystroke slot="overlay" name="down" keys={[{ key: '↓', id: 'words-down' }]} />
+  </Window>
+  </WindowFit>
+
+  <Cursor id="words" shape="text" />
+</div>
+
+<style is:global>
+  @layer components {
+    /* The browser fills the canvas height and the dictionary sits in front of it. */
+    .words-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /*
+     * The selected word keeps its selection in the final frame, as a real selection stays when another app opens.
+     * An inline-block box is one line tall, so the word sits centred in it, as Chrome draws a real selection.
+     */
+    .words-stage [data-selection] {
+      display: inline-block;
+      background: linear-gradient(var(--words-selection), var(--words-selection)) no-repeat 0 0 / 100% 100%;
+    }
+
+    .words-stage {
+      --words-selection: color-mix(in oklch, var(--status-blue) 32%, transparent);
+    }
+
+    /* Once the dictionary is open the guide behind it blurs, so the eye goes to the window in front. */
+    .words-stage [data-browser="words"] {
+      filter: blur(1.5px);
+    }
+
+    .words-stage .words-stage__window {
+      /* Keep the selected word exposed to the left of the dictionary; the 750 by 475 window ends on the canvas's right and bottom edges. */
+      inset-inline-start: 210px;
+      inset-block-start: 125px;
+    }
+
+    /* Keeps the window's only column at the window's width, whatever its content's min-content width. */
+    .words-stage .rc-window {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .words-stage .rc-window > * {
+      min-inline-size: 0;
+    }
+
+    /* The chord floats over the browser's lower left, clear of the narration and of the window that will rise. */
+    .words-stage .words-stage__chord {
+      inset-block: 510px auto;
+      inset-inline-start: 24px;
+      translate: none;
+    }
+
+    /* The detail runs under the floating footer pills, as in Raycast: the last metadata stripe ends 13px below the pane. */
+    .words-stage .rc-window__body,
+    .words-stage .rc-detail {
+      overflow: visible;
+    }
+
+    .words-stage .rc-metadata {
+      --rc-metadata-end: 0px;
+      margin-block-end: -13px;
+    }
+
+    /* The two senses share one cell; the first shows until Down moves to the second, the final frame. */
+    .words-stage .words-stage__senses {
+      display: grid;
+    }
+
+    .words-stage .words-stage__senses > p {
+      grid-area: 1 / 1;
+    }
+
+    .words-stage [data-sense='1'] {
+      opacity: 0;
+    }
+
+    .words-stage .rc-row__title {
+      min-inline-size: 0;
+    }
+
+    /* Stacked: the browser and the window flow one above the other at full width; the chord waits over the browser. */
+    @media (width < 1150px), (height < 700px) {
+      /* Stacked, the guide and the dictionary do not overlap, so the guide stays sharp. */
+      .words-stage [data-browser="words"] {
+        filter: none;
+      }
+
+      .words-stage {
+        position: relative;
+        inset: auto;
+        display: grid;
+        gap: 12px;
+      }
+
+      .words-stage .words-stage__chord {
+        inset-block-start: 160px;
+        inset-inline-start: 50%;
+        translate: -50% 0;
+      }
+    }
+  }
+</style>
+
+<script>
+  import './Words.script';
+</script>

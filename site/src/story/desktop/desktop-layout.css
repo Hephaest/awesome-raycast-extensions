@@ -1,0 +1,89 @@
+@layer components {
+  /*
+   * The day as one tall gradient in oklch shorter hue: the opening's room fades into the morning across the intro,
+   * so the 09:10 stage opens on solid morning; morning, noon and afternoon (so little chroma that the hue path does
+   * not show); then one evening measured from the previews: a first warmth behind the 15:20 window, a flat sunset
+   * band under the 17:50 heading, and the fall from apricot through rose and violet (58, 25, 345, 310, 285) to the
+   * night behind the 17:50 desktop card, so no page text sits on a middle tone. The rest of the page stays on the night.
+   * The director measures the stop positions and sets data-day-measured.
+   * One layer on purpose: a second layer positioned inside the section draws a dark device-pixel line at its own edge
+   * in Chrome whenever that edge lands on a fraction of a pixel, whatever colour lies beneath it.
+   */
+  #day {
+    background: var(--day-morning);
+  }
+
+  #day[data-day-measured] {
+    --card-length: calc(var(--evening-card-end) - var(--evening-card-start));
+    background: linear-gradient(to bottom in oklch shorter hue,
+      var(--room) 0,
+      var(--day-morning) var(--dawn-stop) var(--morning-stop),
+      var(--day-noon) var(--noon-stop),
+      var(--day-afternoon) var(--afternoon-stop) var(--evening-start),
+      oklch(89% 0.045 62) var(--evening-window-end),
+      var(--day-sunset) var(--evening-heading) var(--evening-card-start),
+      oklch(76% 0.085 25) calc(var(--evening-card-start) + var(--card-length) * 0.22),
+      oklch(58% 0.07 345) calc(var(--evening-card-start) + var(--card-length) * 0.45),
+      oklch(42% 0.055 310) calc(var(--evening-card-start) + var(--card-length) * 0.7),
+      oklch(31% 0.04 285) calc(var(--evening-card-start) + var(--card-length) * 0.88),
+      var(--day-night) var(--evening-card-end) 100%);
+  }
+
+  .day__intro {
+    display: grid;
+    gap: 24px;
+    padding-block: var(--section-pad) var(--stage-gap);
+    text-align: center;
+  }
+
+  .day__intro h2 { font-size: var(--type-display); }
+  .day__intro p { color: var(--ink-muted); }
+  .day__intro-line { display: block; }
+
+  .stage {
+    position: relative;
+    padding-block-end: var(--stage-gap);
+    color: var(--ink);
+    text-align: center;
+  }
+
+  .stage__content { position: relative; display: grid; justify-items: center; }
+  .stage .stage__time { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-muted); }
+
+  /* The clock beside the time: ink strokes that follow the tone, with hand angles set per stage by clockHands. */
+  .stage__clock { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+
+  .stage__heading { margin-block-start: 8px; font-size: var(--type-heading); }
+  .stage__narration { margin-block-start: 16px; max-inline-size: 60ch; color: var(--ink-muted); }
+  .stage__command { font-weight: 500; color: var(--ink); }
+  .stage__preview { position: relative; margin-block-start: 40px; inline-size: 100%; min-inline-size: 0; }
+
+  /* The night marker: an empty span from the 17:50 card's middle to the stage's end, so the nav's tone observer flips where the sky does. */
+  .stage__night { position: absolute; inset-inline: 0; inset-block: 50% calc(-1 * var(--stage-gap)); pointer-events: none; }
+  /* The credit under the 10:05 demo: small print hung inside the stage gap, so every stage keeps the same 96px; revealed with the preview. */
+  .stage__footnote { position: absolute; inset-inline: 0; inset-block-start: 100%; margin-block-start: 16px; font-size: var(--type-small); line-height: 1.5; color: var(--ink-faint); }
+
+  /*
+   * Initial reveal states apply only where scripts run; reveal.ts sets data-revealed. A page whose module fails to load
+   * after the CSS applied keeps these at opacity 0; both are same-origin bundles, so that takes a partial load failure.
+   */
+  @media (scripting: enabled) {
+    .stage:not([data-revealed]) :is(.stage__time, .stage__heading, .stage__narration) { opacity: 0; translate: 0 12px; }
+    .stage:not([data-revealed]) .stage__preview { opacity: 0; scale: .985; }
+    .stage:not([data-revealed]) .stage__footnote { opacity: 0; }
+  }
+  .stage[data-revealed] :is(.stage__time, .stage__heading, .stage__narration) { transition: opacity 500ms var(--ease-out), translate 500ms var(--ease-out); }
+  .stage[data-revealed] .stage__narration { transition-delay: 80ms; }
+  .stage[data-revealed] .stage__preview { transition: opacity 500ms var(--ease-out) 160ms, scale 500ms var(--ease-out) 160ms; }
+  .stage[data-revealed] .stage__footnote { transition: opacity 500ms var(--ease-out) 160ms; }
+
+  /* Without measured stops (no JavaScript, or before the first measurement): the intro sits on flat morning, each stage on its own flat colour, the 17:50 section on the sunset, with one hard edge at the close. */
+  #day:not([data-day-measured]) .stage { background: var(--day-afternoon); }
+  #day:not([data-day-measured]) .stage[data-stage='sprint'] { background: var(--day-morning); }
+  #day:not([data-day-measured]) .stage[data-stage='words'] { background: var(--day-noon); }
+  #day:not([data-day-measured]) .stage[data-stage='handover'] { background: var(--day-sunset); }
+
+  @media (width < 1150px), (height < 700px) {
+    .stage__preview { max-inline-size: 960px; }
+  }
+}

@@ -1,0 +1,69 @@
+---
+import { Picture } from 'astro:assets';
+import wallpaper from '../../assets/wallpaper/erg-chebbi.jpg';
+import MenuBar from './MenuBar.astro';
+
+interface Props {
+  id: string;
+  appearance: 'light' | 'dark';
+  counts: number[];
+  current: number;
+  time: string;
+  class?: string;
+}
+
+const { id, appearance, counts, current, time, class: className } = Astro.props;
+---
+
+<div class:list={['desktop-card', className]} data-desktop-card={id} data-appearance={appearance}>
+  <div class="desktop-card__screen">
+    <div class="desktop-card__wall" data-scrub>
+      <Picture src={wallpaper} formats={['avif', 'webp']} widths={[1440, 2880]} sizes="(max-width: 1149px) 100vw, 1152px" alt="Desert under blue sky, Erg Chebbi, Morocco. Photo by Kevin Wenning on Unsplash." loading="lazy" />
+    </div>
+    <div class="desktop-card__tint"></div>
+    <MenuBar counts={counts} current={current} time={time} appearance={appearance} />
+    <div class="desktop-card__body"><slot /></div>
+  </div>
+</div>
+
+<style is:global>
+  @layer components {
+    .desktop-card {
+      position: absolute;
+      inset: 0;
+      inline-size: 960px;
+      block-size: 600px;
+      padding: 8px;
+      border-radius: 19px;
+      background: rgb(255 255 255 / .16);
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08), inset 0 1px 0 rgb(255 255 255 / .3), 0 24px 60px -20px rgb(0 0 0 / .4);
+      font-family: var(--font-ui);
+      color: var(--app-ink);
+      view-timeline: --desktop-drift block;
+    }
+
+    .desktop-card[data-appearance='dark'] {
+      background: rgb(255 255 255 / .06);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / .08), inset 0 1px 0 rgb(255 255 255 / .3), 0 24px 60px -20px rgb(0 0 0 / .4);
+    }
+
+    .desktop-card__screen { position: relative; inline-size: 100%; block-size: 100%; border-radius: 12px; overflow: clip; isolation: isolate; }
+    .desktop-card__wall { position: absolute; inset: -24px; }
+    .desktop-card__wall :is(picture, img) { display: block; inline-size: 100%; block-size: 100%; }
+    .desktop-card__wall img { object-fit: cover; }
+    .desktop-card__tint { position: absolute; inset: 0; background: rgb(194 126 36 / .06); }
+    .desktop-card[data-appearance='dark'] .desktop-card__tint { background: rgb(10 20 55 / .28); }
+    .desktop-card__body { position: absolute; inset: 0; }
+
+    @supports (animation-timeline: view()) {
+      .desktop-card__wall {
+        animation: wallpaper-drift linear both;
+        animation-timeline: --desktop-drift;
+        animation-range: cover 0% cover 100%;
+      }
+    }
+
+    @keyframes wallpaper-drift { from { translate: 0 0; } to { translate: 0 -24px; } }
+
+  }
+</style>

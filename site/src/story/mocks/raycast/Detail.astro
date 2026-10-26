@@ -1,0 +1,134 @@
+---
+/**
+ * The right pane of a split view: a heading, body content, then metadata rows.
+ * `level` is the heading's markdown level: 1 is Raycast 2.9's measured # heading, 2 is a ## heading.
+ */
+interface Props {
+  heading?: string;
+  level?: 1 | 2;
+  class?: string;
+}
+
+const { heading, level = 2, class: className } = Astro.props;
+---
+
+<div class:list={['rc-detail', className]}>
+  <div class="rc-detail__content">
+    {heading && <h3 class:list={['rc-detail__heading', level === 1 && 'rc-detail__heading--1']}>{heading}</h3>}
+    <slot />
+  </div>
+  <slot name="metadata" />
+</div>
+
+<style is:global>
+  @layer components {
+    .rc-detail {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-block-size: 0;
+      min-inline-size: 0;
+      overflow: clip;
+    }
+
+    .rc-detail__content {
+      padding: 16px 18px;
+      overflow: clip;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .rc-detail__heading {
+      margin-block-end: 8px;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      text-wrap: balance;
+    }
+
+    /* Raycast 2.9's markdown: a 27/31 bold # heading over 15/21 body text in full ink, 16px in from the pane's edge. */
+    .rc-detail:has(.rc-detail__heading--1) .rc-detail__content {
+      padding: 16px 16px 0;
+      font-size: 15px;
+      line-height: 21px;
+    }
+
+    .rc-detail .rc-detail__heading--1 {
+      margin-block-end: 12px;
+      font-size: 27px;
+      font-weight: 700;
+      line-height: 31px;
+      letter-spacing: 0;
+      text-wrap: wrap;
+    }
+
+    .rc-detail:has(.rc-detail__heading--1) .rc-detail__content p {
+      color: var(--app-ink);
+    }
+
+    .rc-detail__content p {
+      margin-block-end: 8px;
+      color: var(--app-ink-2);
+    }
+
+    .rc-detail__content strong {
+      font-weight: 600;
+      color: var(--app-ink);
+    }
+
+    /*
+     * Detail.Metadata as Raycast 2.9 draws it: 28px rows on alternating faint stripes, no rules between them, 16px in
+     * from the pane's sides, 12px labels in the third ink and values in full ink.
+     */
+    .rc-metadata {
+      display: grid;
+      padding: 0 16px 12px;
+      padding-block-end: var(--rc-metadata-end, 12px);
+      font-size: 12px;
+    }
+
+    .rc-metadata__row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-block-size: 28px;
+      padding-inline: 8px;
+      border-radius: 6px;
+    }
+
+    .rc-metadata__row:nth-child(odd) {
+      background: color-mix(in oklch, var(--app-ink) 2.5%, transparent);
+    }
+
+    .rc-metadata__label {
+      color: var(--app-ink-3);
+    }
+
+    .rc-metadata__value {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-inline-size: 0;
+      color: var(--app-ink);
+      white-space: nowrap;
+      overflow: clip;
+      text-overflow: ellipsis;
+    }
+
+    /* A TagList pill: 20px tall, neutral at 10% black unless the tag sets its own colour. */
+    .rc-window .rc-metadata .rc-tag {
+      block-size: 20px;
+      padding-inline: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      background: color-mix(in oklch, var(--tag, rgb(0 0 0 / 0.53)) 19%, transparent);
+    }
+
+    /* A Metadata.Link's arrow: a thin 10px glyph in the third ink, 12px after the value. */
+    .rc-metadata .rc-metadata__link {
+      margin-inline: 1px -2px;
+      color: var(--app-ink-3);
+      stroke-width: 0.9;
+    }
+  }
+</style>

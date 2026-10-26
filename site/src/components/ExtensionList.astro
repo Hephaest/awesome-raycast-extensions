@@ -1,0 +1,188 @@
+---
+import ExtensionIcon from './ExtensionIcon.astro';
+import DownloadIcon from './DownloadIcon.astro';
+import { extensions, readmeUrl, releaseZipUrl } from '../data/extensions';
+
+/**
+ * The story's ending and the four extensions in one section: a heading that bookends the opening slogan, two lines,
+ * then one row per extension: the icon tile, the title, one line, and two quiet buttons, View (the README on GitHub)
+ * and Download (the release zip). The head and the rows rise one after another when the section enters the viewport.
+ * It sits on the night surface the tail shares (the .night wrapper in index.astro), so it sets none itself.
+ */
+---
+
+<section class="extensions" id="extensions" aria-labelledby="extensions-title" data-reveal>
+  <div class="container extensions__inner">
+    <div class="extensions__head" style="--i: 0">
+      <h2 class="display" id="extensions-title">Keep the work moving.</h2>
+      <p>
+        <span class="extensions__lead-line">That was one developer’s day. Yours may look different.</span>
+        <span class="extensions__lead-line">Choose the extensions that fit the way you work.</span>
+      </p>
+    </div>
+
+    <ul class="extensions__list" role="list">
+      {
+        extensions.map((extension, index) => (
+          <li class="extensions__row" style={`--i: ${index + 1}; --tint: ${extension.tint}`}>
+            <span class="extensions__tile">
+              <ExtensionIcon extension={extension} size={32} />
+            </span>
+            <div class="extensions__text">
+              <h3 class="extensions__name">{extension.title}</h3>
+              <p class="extensions__line">{extension.line}</p>
+            </div>
+            <div class="extensions__actions">
+              {/* No whitespace around the hidden labels: a space after them would render as a flex item and widen the gap. */}
+              <a class="button button--quiet" href={readmeUrl(extension.folder)} target="_blank" rel="noopener">
+                View<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M5 3.5h7.5V11M12.5 3.5 3.5 12.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span class="visually-hidden">, {extension.title} README on GitHub</span></a>
+              <a class="button button--quiet extensions__download" href={releaseZipUrl(extension.folder)} target="_blank" rel="noopener">
+                <DownloadIcon />
+                Download<span class="visually-hidden">, {extension.title} zip</span></a>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style is:global>
+  @layer components {
+    .extensions {
+      padding-block: var(--tail-gap);
+    }
+
+    .extensions__inner {
+      display: grid;
+      justify-items: center;
+      gap: 56px;
+    }
+
+    .extensions__head {
+      display: grid;
+      justify-items: center;
+      gap: 24px;
+      text-align: center;
+    }
+
+    .extensions__head h2 {
+      font-size: var(--type-display);
+    }
+
+    .extensions__head p {
+      max-inline-size: 60ch;
+      color: var(--ink-muted);
+    }
+
+    /* Each sentence on its own line, as the day's intro does. */
+    .extensions__lead-line {
+      display: block;
+    }
+
+    /* The list draws its hairlines the way the FAQ does: one above, one under each row. */
+    .extensions__list {
+      inline-size: 100%;
+      max-inline-size: 880px;
+      margin: 0;
+      padding: 0;
+      border-block-start: 1px solid var(--line);
+      list-style: none;
+    }
+
+    .extensions__row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      padding-block: 20px;
+      border-block-end: 1px solid var(--line);
+    }
+
+    /* The tile carries the extension's tint; nothing else on the row does. */
+    .extensions__tile {
+      display: grid;
+      place-items: center;
+      flex: none;
+      inline-size: 52px;
+      block-size: 52px;
+      border: 1px solid color-mix(in oklch, var(--tint) 45%, transparent);
+      border-radius: 14px;
+      background: color-mix(in oklch, var(--tint) 18%, var(--room));
+      box-shadow: inset 0 1px 0 color-mix(in oklch, var(--ink) 14%, transparent);
+    }
+
+    .extensions__text {
+      display: grid;
+      flex: 1;
+      gap: 2px;
+      min-inline-size: 0;
+    }
+
+    .extensions__name {
+      font-size: var(--type-body);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+
+    .extensions__line {
+      font-size: var(--type-label);
+      line-height: 1.5;
+      color: var(--ink-muted);
+    }
+
+    .extensions__actions {
+      display: flex;
+      flex: none;
+      align-items: center;
+      gap: 8px;
+      margin-inline-start: auto;
+    }
+
+    /* Download is the row's main action: quiet at rest, filled like the main button on hover. */
+    .extensions__download {
+      transition:
+        transform 100ms var(--ease-out),
+        background-color 150ms var(--ease-out),
+        border-color 150ms var(--ease-out),
+        color 150ms var(--ease-out);
+    }
+
+    @media (hover: hover) {
+      .extensions__download:hover {
+        border-color: transparent;
+        background: var(--ink);
+        color: var(--room);
+      }
+    }
+
+    /* Reveal: the head rises first, then the rows one after another; after that only the buttons move. */
+    @media (scripting: enabled) {
+      .extensions:not([data-revealed]) :is(.extensions__head, .extensions__row) {
+        opacity: 0;
+        translate: 0 12px;
+      }
+    }
+
+    .extensions[data-revealed] :is(.extensions__head, .extensions__row) {
+      transition:
+        opacity 500ms var(--ease-out) calc(var(--i) * 60ms),
+        translate 500ms var(--ease-out) calc(var(--i) * 60ms);
+    }
+
+    /* Phone: the two buttons drop under the text and share the row's width. */
+    @media (max-width: 639px) {
+      .extensions__actions {
+        flex-basis: 100%;
+        margin-inline-start: 0;
+      }
+
+      .extensions__actions .button {
+        flex: 1;
+      }
+    }
+  }
+</style>

@@ -1,0 +1,12 @@
+---
+/** The download arrow into a tray, in the current text colour, for every button that leads to a download. */
+interface Props {
+  size?: number;
+}
+
+const { size = 16 } = Astro.props;
+---
+
+<svg class="download-icon" width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+  <path d="M8 2.5v8m0 0 3-3m-3 3-3-3M3 11.5v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

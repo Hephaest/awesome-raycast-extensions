@@ -1,0 +1,286 @@
+---
+/**
+ * A logo-free Chrome window drawn to Chromium's sizes: a 41px tab strip, one 232px active tab, a 46px toolbar, the page.
+ * Colors come only from the --chrome-* appearance tokens.
+ * The default slot is the page; the overlay slot draws above the page, in the page's own coordinates.
+ * The favicon slot replaces the grey circle with the site's own 16px icon.
+ */
+interface Props {
+  /** A name the stage script finds the window by, as data-browser. */
+  id?: string;
+  title: string;
+  address: string;
+  /** Outer size in design px. */
+  width?: number;
+  height?: number;
+  /** Position in design px on the 960 by 600 canvas, used in the wide layout only. */
+  x?: number;
+  y?: number;
+  class?: string;
+}
+
+const { id, title, address, width = 840, height = 600, x = 0, y = 0, class: className } = Astro.props;
+---
+
+<div
+  class:list={['browser-frame', className]}
+  data-browser={id}
+  style={`--browser-x: ${x}px; --browser-y: ${y}px; --browser-width: ${width}px; --browser-height: ${height}px`}
+>
+  <div class="browser-frame__strip">
+    <span class="browser-frame__lights" aria-hidden="true"><i></i><i></i><i></i></span>
+    <div class="browser-frame__tab">
+      <slot name="favicon"><span class="browser-frame__favicon" aria-hidden="true"></span></slot>
+      <span class="browser-frame__title">
+        {title}
+      </span>
+      <svg class="browser-frame__close" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="m5 5 6 6M11 5l-6 6"></path>
+      </svg>
+    </div>
+    <svg class="browser-frame__new-tab" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M8 3.5v9M3.5 8h9"></path>
+    </svg>
+  </div>
+
+  <div class="browser-frame__toolbar" aria-hidden="true">
+    <svg class="browser-frame__button" viewBox="0 0 34 34">
+      <path d="M23 17H11M16 11.5 10.5 17l5.5 5.5"></path>
+    </svg>
+    <svg class="browser-frame__button browser-frame__button--off" viewBox="0 0 34 34">
+      <path d="M11 17h12M18 11.5l5.5 5.5-5.5 5.5"></path>
+    </svg>
+    <svg class="browser-frame__button" viewBox="0 0 34 34">
+      <path d="M22.5 17a5.5 5.5 0 1 1-1.6-3.9"></path>
+      <path d="M21.5 10.5v3.5H18"></path>
+    </svg>
+    <div class="browser-frame__omnibox">
+      <svg class="browser-frame__site" width="16" height="16" viewBox="0 0 16 16">
+        <path d="M3 5.5h6M11.5 5.5H13M3 10.5h1.5M7 10.5h6"></path>
+        <circle cx="10.25" cy="5.5" r="1.25"></circle>
+        <circle cx="5.75" cy="10.5" r="1.25"></circle>
+      </svg>
+      <span class="browser-frame__address">
+        {address}
+      </span>
+    </div>
+    <svg class="browser-frame__button browser-frame__button--trailing" viewBox="0 0 34 34">
+      <path d="M14 11.5h2.5a2 2 0 1 1 4 0H23v4a2 2 0 1 0 0 4v4h-4.5a2 2 0 1 1-4 0H10v-4.5a2 2 0 1 0 0-4V11.5z"></path>
+    </svg>
+    <svg class="browser-frame__button" viewBox="0 0 34 34">
+      <circle cx="17" cy="14" r="3.5"></circle>
+      <path d="M10.5 24.5a6.5 6.5 0 0 1 13 0"></path>
+    </svg>
+    <svg class="browser-frame__button" viewBox="0 0 34 34">
+      <circle cx="17" cy="11" r="1.1"></circle>
+      <circle cx="17" cy="17" r="1.1"></circle>
+      <circle cx="17" cy="23" r="1.1"></circle>
+    </svg>
+  </div>
+
+  <div class="browser-frame__viewport">
+    <div class="browser-frame__page">
+      <slot />
+    </div>
+    <div class="browser-frame__overlay">
+      <slot name="overlay" />
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  @layer components {
+    .browser-frame {
+      position: absolute;
+      inset-inline-start: var(--browser-x);
+      inset-block-start: var(--browser-y);
+      display: grid;
+      grid-template-rows: 41px 46px minmax(0, 1fr);
+      inline-size: var(--browser-width);
+      block-size: var(--browser-height);
+      border-radius: 10px;
+      background: var(--chrome-toolbar);
+      color: var(--chrome-text);
+      box-shadow: var(--app-shadow);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      line-height: 1.3;
+      overflow: clip;
+      transform-origin: 50% 40%;
+    }
+
+    .browser-frame__strip {
+      display: flex;
+      align-items: flex-end;
+      padding-inline-start: 12px;
+      background: var(--chrome-frame);
+    }
+
+    /* The traffic lights sit centered in the strip, 8px apart, as macOS draws them on Chrome's frame. */
+    .browser-frame__lights {
+      display: inline-flex;
+      align-self: center;
+      gap: 8px;
+      margin-inline-end: 18px;
+    }
+
+    .browser-frame__lights i {
+      inline-size: 12px;
+      block-size: 12px;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 0.5px var(--chrome-line);
+    }
+
+    /* macOS's own window-control colors; they are the same in light and dark. */
+    .browser-frame__lights i:nth-child(1) {
+      background: #ff5f57;
+    }
+
+    .browser-frame__lights i:nth-child(2) {
+      background: #febc2e;
+    }
+
+    .browser-frame__lights i:nth-child(3) {
+      background: #28c840;
+    }
+
+    /* The active tab: 232 by 35, 10px top radii, and two outward flares that merge it into the toolbar. */
+    .browser-frame__tab {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: none;
+      inline-size: min(232px, 50%);
+      block-size: 35px;
+      padding-inline: 12px 8px;
+      border-radius: 10px 10px 0 0;
+      background: var(--chrome-toolbar);
+      color: var(--chrome-text);
+    }
+
+    .browser-frame__tab::before,
+    .browser-frame__tab::after {
+      content: '';
+      position: absolute;
+      inset-block-end: 0;
+      inline-size: 10px;
+      block-size: 10px;
+    }
+
+    .browser-frame__tab::before {
+      inset-inline-end: 100%;
+      background: radial-gradient(circle at 0 0, transparent 9.5px, var(--chrome-toolbar) 10px);
+    }
+
+    .browser-frame__tab::after {
+      inset-inline-start: 100%;
+      background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--chrome-toolbar) 10px);
+    }
+
+    .browser-frame__favicon {
+      flex: none;
+      inline-size: 16px;
+      block-size: 16px;
+      border-radius: 50%;
+      background: color-mix(in oklch, var(--chrome-text-2) 30%, transparent);
+    }
+
+    .browser-frame__title {
+      flex: 1;
+      min-inline-size: 0;
+      overflow: clip;
+      white-space: nowrap;
+      mask-image: linear-gradient(to right, black calc(100% - 16px), transparent);
+    }
+
+    .browser-frame__close,
+    .browser-frame__new-tab {
+      flex: none;
+      fill: none;
+      stroke: var(--chrome-text-2);
+      stroke-width: 1.4;
+      stroke-linecap: round;
+    }
+
+    .browser-frame__new-tab {
+      align-self: center;
+      margin-inline-start: 18px;
+    }
+
+    .browser-frame__toolbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding-inline: 6px 8px;
+      border-block-end: 1px solid var(--chrome-line);
+      background: var(--chrome-toolbar);
+    }
+
+    .browser-frame__button {
+      flex: none;
+      inline-size: 34px;
+      block-size: 34px;
+      fill: none;
+      stroke: var(--chrome-text-2);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .browser-frame__button--trailing {
+      margin-inline-start: 6px;
+    }
+
+    .browser-frame__button--off {
+      opacity: 0.4;
+    }
+
+    .browser-frame__omnibox {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      gap: 10px;
+      min-inline-size: 0;
+      block-size: 34px;
+      margin-inline-start: 6px;
+      padding-inline: 12px;
+      border-radius: 17px;
+      background: var(--chrome-omnibox);
+      font-size: 14px;
+    }
+
+    .browser-frame__site {
+      flex: none;
+      fill: none;
+      stroke: var(--chrome-text-2);
+      stroke-width: 1.3;
+      stroke-linecap: round;
+    }
+
+    .browser-frame__address {
+      min-inline-size: 0;
+      overflow: clip;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .browser-frame__viewport {
+      position: relative;
+      min-block-size: 0;
+      overflow: clip;
+    }
+
+    .browser-frame__page {
+      block-size: 100%;
+      overflow: clip;
+    }
+
+    .browser-frame__overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+  }
+</style>

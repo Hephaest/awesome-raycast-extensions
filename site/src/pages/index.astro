@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import Opening from '../components/Opening.astro';
+import Day from '../story/Day.astro';
+import ExtensionList from '../components/ExtensionList.astro';
+import Faq from '../components/Faq.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+---
+
+<Base
+  title="Awesome Raycast Extensions: Jira, GitHub reviews, Zadig and a dictionary in Raycast"
+  description="Four free, open-source Raycast extensions for macOS. Follow one developer's day with them, then pick the ones that fit yours."
+>
+  <SiteHeader />
+  <main>
+    <Opening />
+    <Day />
+    <div class="night" data-tone="dark">
+      <ExtensionList />
+      <Faq />
+    </div>
+  </main>
+  <SiteFooter />
+</Base>

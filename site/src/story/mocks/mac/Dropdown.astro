@@ -1,0 +1,171 @@
+---
+import Icon, { type IconName } from '../Icon.astro';
+import Identicon from '../github/Identicon.astro';
+import type { MenuCategory } from '../../story';
+
+/**
+ * The GitHub extension's menu bar dropdown as macOS 26 draws it, measured from real captures: a 274px glass menu of
+ * 24px rows, the extension's rows in its order, and the submenus a stage opens, to the left, each level with its row.
+ * It hangs 2px below the 30px menu bar. The stage script sets --menu-left from the GitHub item; without it the menu
+ * keeps its right edge on the item's. Rendered at opacity 0; a stage script opens it and moves the highlight.
+ */
+interface Props {
+  categories: MenuCategory[];
+  /** The categories whose submenus are rendered beside the dropdown, each lined up with its row. */
+  submenu?: MenuCategory['id'] | MenuCategory['id'][];
+  id?: string;
+}
+
+const { categories, submenu = [], id } = Astro.props;
+
+// The glyph beside each group, as the extension draws it.
+const icons: Record<MenuCategory['id'], IconName> = {
+  recent: 'clock',
+  'needs-review': 'bell',
+  drafts: 'mug',
+  waiting: 'hourglass',
+  'changes-requested': 'bug',
+  failing: 'x-circle',
+  ready: 'check',
+};
+
+// Rows are 24px after 5px of padding; a divider block of 11px follows the first and the second row.
+const rowTop = (index: number) => 5 + index * 24 + Math.min(index, 2) * 11;
+const opened = (Array.isArray(submenu) ? submenu : [submenu]).flatMap((categoryId) => {
+  const index = categories.findIndex((category) => category.id === categoryId);
+  return index === -1 ? [] : [{ category: categories[index], top: rowTop(index) - 5 }];
+});
+---
+
+<div class="mac-dropdown" data-dropdown={id}>
+  <div class="mac-dropdown__menu mac-menu">
+    {
+      categories.map((category, index) => (
+        <>
+          {(index === 1 || index === 2) && <div class="mac-menu__divider" />}
+          <div class="mac-menu__row" data-category={category.id} data-empty={category.pullRequests.length === 0 ? '' : undefined}>
+            <Icon name={icons[category.id]} size={16} />
+            <span class="mac-menu__label">
+              {category.title}
+              {category.pullRequests.length > 0 && category.id !== 'recent' && ` (${category.pullRequests.length})`}
+            </span>
+            <Icon name="chevron-right" size={13} class="mac-menu__chevron" />
+          </div>
+        </>
+      ))
+    }
+    <div class="mac-menu__divider"></div>
+    <div class="mac-menu__row">
+      <Icon name="refresh" size={16} />
+      <span class="mac-menu__label">Force Refresh</span>
+      <span class="mac-menu__shortcut">⌘ R</span>
+    </div>
+  </div>
+  {
+    opened.map(({ category, top }) => (
+      <div class="mac-dropdown__submenu mac-menu" data-submenu={category.id} style={`--submenu-top: ${top}px`}>
+        {category.pullRequests.map((pullRequest, index) => (
+          <div class="mac-menu__row" data-pr={index}>
+            <Identicon person={pullRequest.author} size={16} />
+            <span class="mac-menu__label">
+              {pullRequest.title} <span class="mac-menu__secondary">({pullRequest.repository})</span>
+            </span>
+            <span class="mac-menu__shortcut">⌘ {index + 1}</span>
+          </div>
+        ))}
+      </div>
+    ))
+  }
+</div>
+
+<style is:global>
+  @layer components {
+    .mac-dropdown {
+      --menu-ink: rgb(0 0 0 / 0.86);
+      --menu-accent: rgb(39 77 107);
+      --menu-parent: rgb(0 0 0 / 0.16);
+      position: absolute;
+      inset-block-start: 32px;
+      inset-inline: var(--menu-left, auto) auto;
+      inset-inline-end: var(--menu-right, max(8px, var(--menubar-github-end, 260px)));
+      opacity: 0;
+      z-index: 3;
+      font-family: var(--font-ui);
+    }
+
+    /* macOS 26 light menu glass: a frosted near-white sheet with a hairline edge and a soft drop shadow. */
+    .mac-menu {
+      padding: 5px;
+      border-radius: 12px;
+      background: rgb(242 242 242 / 0.82);
+      /* Safari reads the unprefixed property from 18 (2024-09); the prefix stays until that is the floor. */
+      -webkit-backdrop-filter: blur(24px) saturate(1.6);
+      backdrop-filter: blur(24px) saturate(1.6);
+      box-shadow:
+        inset 0 0 0 0.5px rgb(255 255 255 / 0.6),
+        0 0 0 0.5px rgb(0 0 0 / 0.18),
+        0 12px 32px -6px rgb(0 0 0 / 0.32);
+      color: var(--menu-ink);
+    }
+
+    .mac-dropdown__menu {
+      inline-size: 274px;
+    }
+
+    .mac-dropdown__submenu {
+      position: absolute;
+      inset-block-start: var(--submenu-top, 0px);
+      /* The submenu overlaps the menu's edge by 3px, as macOS lays a submenu over its parent. */
+      inset-inline-end: calc(100% - 3px);
+      inline-size: max-content;
+      opacity: 0;
+    }
+
+    /* A row's colour drives its icon, its secondary text and its shortcut, so one colour change highlights the whole row. */
+    .mac-menu__row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      block-size: 24px;
+      padding-inline: 11px 11px;
+      border-radius: 6px;
+      color: var(--menu-ink);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .mac-menu__row[data-empty] {
+      color: rgb(0 0 0 / 0.3);
+    }
+
+    .mac-menu__label {
+      flex: 1;
+      min-inline-size: 0;
+    }
+
+    .mac-menu__secondary {
+      color: color-mix(in srgb, currentColor 58%, transparent);
+    }
+
+    .mac-menu__chevron {
+      color: currentColor;
+      stroke-width: 1.8;
+    }
+
+    .mac-menu__row[data-empty] .mac-menu__chevron {
+      color: currentColor;
+    }
+
+    .mac-menu__shortcut {
+      flex: none;
+      margin-inline-start: 40px;
+      color: color-mix(in srgb, currentColor 42%, transparent);
+    }
+
+    .mac-menu__divider {
+      block-size: 1px;
+      margin: 5px 11px;
+      background: rgb(0 0 0 / 0.1);
+    }
+  }
+</style>

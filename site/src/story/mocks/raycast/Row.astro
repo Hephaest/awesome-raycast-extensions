@@ -1,0 +1,127 @@
+---
+/**
+ * One list row: an icon slot, a title, a dim subtitle, and right-aligned accessories.
+ * `selected` pre-renders the selection; scripts crossfade between rows with `select()`.
+ */
+interface Props {
+  title: string;
+  subtitle?: string;
+  selected?: boolean;
+  class?: string;
+  /** A handle for the stage script, rendered as data-row. */
+  id?: string;
+}
+
+const { title, subtitle, selected = false, class: className, id } = Astro.props;
+---
+
+<div class:list={['rc-row', className]} data-row={id} data-selected={selected ? 'true' : undefined}>
+  <span class="rc-row__icon"><slot name="icon" /></span>
+  <span class="rc-row__title">{title}</span>
+  {subtitle && <span class="rc-row__subtitle">{subtitle}</span>}
+  <span class="rc-row__accessories"><slot /></span>
+</div>
+
+<style is:global>
+  @layer components {
+    .rc-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      block-size: var(--rc-row, 40px);
+      padding-inline: 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .rc-row[data-selected='true'] {
+      background: var(--app-selection);
+    }
+
+    .rc-row__icon {
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      inline-size: 20px;
+      block-size: 20px;
+    }
+
+    .rc-row__icon:empty {
+      display: none;
+    }
+
+    .rc-row__title {
+      min-inline-size: 0;
+      font-weight: 500;
+      overflow: clip;
+      text-overflow: ellipsis;
+    }
+
+    .rc-row__subtitle {
+      color: var(--app-ink-3);
+      overflow: clip;
+      text-overflow: ellipsis;
+    }
+
+    .rc-row__accessories {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: none;
+      margin-inline-start: auto;
+      color: var(--app-ink-2);
+      font-size: 12px;
+    }
+
+    .rc-row__accessories:empty {
+      display: none;
+    }
+
+    .rc-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--tag, var(--app-ink-2));
+      background: color-mix(in oklch, var(--tag, var(--app-ink-2)) 14%, transparent);
+    }
+
+    .rc-status {
+      font-size: 12px;
+      color: var(--status, var(--app-ink-2));
+    }
+
+    /*
+     * Inside a window, Raycast 2.9's measures: rows sit flush with a 10px corner, medium titles and accessories share
+     * the window's 14px, and a tag is 24px tall with its color at 19%.
+     */
+    .rc-window .rc-row {
+      gap: 12px;
+      padding-inline: 10px;
+      border-radius: 10px;
+    }
+
+    /* Raycast's subtitle is the darker of its two greys. */
+    .rc-window .rc-row__subtitle {
+      color: var(--app-ink-2);
+    }
+
+    .rc-window .rc-row__accessories {
+      gap: 12px;
+      font-size: inherit;
+    }
+
+    .rc-window .rc-tag {
+      block-size: 24px;
+      padding-inline: 12px;
+      border-radius: 7px;
+      font-size: inherit;
+      background: color-mix(in oklch, var(--tag, var(--app-ink-2)) var(--rc-tag-tint, 19%), transparent);
+    }
+
+    .rc-window .rc-status {
+      font-size: inherit;
+    }
+  }
+</style>

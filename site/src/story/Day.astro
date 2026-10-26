@@ -1,0 +1,42 @@
+---
+import StoryStage from './StoryStage.astro';
+import StoryCanvas from './desktop/StoryCanvas.astro';
+import Sprint from './stages/Sprint.astro';
+import Words from './stages/Words.astro';
+import Reviews from './stages/Reviews.astro';
+import SubEnvironment from './stages/SubEnvironment.astro';
+import Handover from './stages/Handover.astro';
+import { dictionaryEntry, stages } from './story';
+import './desktop/desktop-tokens.css';
+import './desktop/desktop-layout.css';
+
+const previews = { sprint: Sprint, words: Words, reviews: Reviews, subenvironment: SubEnvironment, handover: Handover };
+---
+
+<section id="day" class="day" data-tone="light" aria-labelledby="day-heading">
+  <div class="container day__intro">
+    <h2 class="display" id="day-heading">One developer's day</h2>
+    <p>
+      <span class="day__intro-line">Today, you’re Mateus, a full-stack developer shipping Harbourline’s freight booking app.</span>
+      <span class="day__intro-line">Let’s see where these extensions save you time.</span>
+    </p>
+  </div>
+  {stages.map((stage) => {
+    const Preview = previews[stage.id];
+    return (
+      <StoryStage stage={stage}>
+        <StoryCanvas id={stage.id} appearance={stage.id === 'handover' ? 'dark' : 'light'}><Preview /></StoryCanvas>
+        {stage.id === 'words' && (
+          <Fragment slot="footnote">
+            * Dictionary text by Wiktionary contributors, <a class="link" href={dictionaryEntry.url} target="_blank" rel="noopener">en.wiktionary.org/wiki/{dictionaryEntry.word}</a>,
+            <a class="link" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>, adapted for the demo.
+          </Fragment>
+        )}
+      </StoryStage>
+    );
+  })}
+</section>
+
+<script>
+  import './scripts/director';
+</script>

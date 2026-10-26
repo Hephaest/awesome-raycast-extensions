@@ -1,0 +1,144 @@
+---
+import CtaBlock from './CtaBlock.astro';
+import HeroSet from '../story/sets/HeroSet.astro';
+
+/**
+ * The first screen: the slogan, one line on what the extensions are, the two actions, the Raycast root search with
+ * the demo commands as favourites, and a cue down into the day. The load choreography runs once in CSS; the
+ * launcher's own sequence is the hero demo.
+ */
+---
+
+<section class="opening" id="top" aria-labelledby="opening-title">
+  <div class="container opening__inner">
+    <h1 class="display opening__title" id="opening-title">
+      <span class="opening__line">Your whole workday,</span>
+      <span class="opening__line">one hotkey away.</span>
+    </h1>
+    <p class="opening__subline">Free, open-source Raycast extensions for the tools you open all day.</p>
+    <CtaBlock class="opening__cta" />
+    <div class="opening__launcher">
+      <HeroSet />
+    </div>
+    <a class="opening__cue" href="#day">
+      <span>Follow one developer's day</span>
+      <span class="opening__cue-mark" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 16 16">
+          <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </span>
+    </a>
+  </div>
+</section>
+
+<style is:global>
+  @layer components {
+    /* The bottom padding matches the space above the cue, so the cue sits centred between the launcher and the day. */
+    .opening {
+      --opening-gap: 24px;
+      --cue-space: 44px;
+      padding-block: calc(var(--nav-line) + clamp(64px, 10vh, 128px)) var(--cue-space);
+      text-align: center;
+    }
+
+    .opening__inner {
+      display: grid;
+      justify-items: center;
+      gap: var(--opening-gap);
+    }
+
+    .opening__title {
+      font-size: var(--type-display);
+      max-inline-size: 20ch;
+    }
+
+    .opening__line {
+      display: block;
+    }
+
+    .opening__subline {
+      max-inline-size: 52ch;
+      font-size: var(--type-body);
+      color: var(--ink-muted);
+    }
+
+    .opening__cta {
+      margin-block-start: 8px;
+    }
+
+    .opening__launcher {
+      inline-size: 100%;
+      margin-block-start: 24px;
+    }
+
+    /* The cue: a labelled link to the day, the label and a caret in a round outline on one line. */
+    .opening__cue {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-block-start: calc(var(--cue-space) - var(--opening-gap));
+      font-size: 14px;
+      color: var(--ink-muted);
+      text-decoration: none;
+      transition: color 150ms var(--ease-out);
+    }
+
+    .opening__cue:hover {
+      color: var(--ink);
+    }
+
+    /* The mark is close to the label's line height, so it reads as part of the line, not a separate button. */
+    .opening__cue-mark {
+      display: grid;
+      place-items: center;
+      inline-size: 24px;
+      block-size: 24px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+    }
+
+    /* Once per load, where scripts run: the headline lines rise with an 80ms stagger, then the subline, the actions, the launcher, the cue. */
+    @media (scripting: enabled) {
+      .opening__line,
+      .opening__subline,
+      .opening__cta,
+      .opening__cue {
+        animation: opening-rise 700ms var(--ease-out) both;
+      }
+
+      .opening__line:nth-child(2) {
+        animation-delay: 80ms;
+      }
+
+      .opening__subline {
+        animation-delay: 240ms;
+      }
+
+      .opening__cta {
+        animation-delay: 400ms;
+      }
+
+      .opening__cue {
+        animation-delay: 700ms;
+      }
+
+      .opening__launcher {
+        animation: opening-settle 700ms var(--ease-out) 500ms both;
+      }
+    }
+
+    @keyframes opening-rise {
+      from {
+        opacity: 0;
+        translate: 0 12px;
+      }
+    }
+
+    @keyframes opening-settle {
+      from {
+        opacity: 0;
+        scale: 0.98;
+      }
+    }
+  }
+</style>

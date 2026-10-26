@@ -1,0 +1,82 @@
+---
+import Window from '../mocks/raycast/Window.astro';
+import StoryCanvas from '../desktop/StoryCanvas.astro';
+import SearchBar from '../mocks/raycast/SearchBar.astro';
+import ActionBar from '../mocks/raycast/ActionBar.astro';
+import List from '../mocks/raycast/List.astro';
+import Section from '../mocks/raycast/Section.astro';
+import Row from '../mocks/raycast/Row.astro';
+import ExtensionIcon from '../../components/ExtensionIcon.astro';
+import { extensions } from '../../data/extensions';
+
+/**
+ * The hero's launcher: Raycast's root search, with the four extensions' commands as favorites.
+ * The load sequence (window, rows) is scripted in HeroSet.script.ts; this is the final frame.
+ */
+const commands = [
+  { folder: 'jira', command: 'My Filters' },
+  { folder: 'english-dictionary', command: 'Define Selected Word' },
+  { folder: 'github', command: 'My Pull Requests' },
+  { folder: 'zadig', command: 'Search Workflows' },
+];
+const byFolder = new Map(extensions.map((extension) => [extension.folder, extension]));
+---
+
+<StoryCanvas id="hero" appearance="light">
+<div class="hero-set">
+  <Window id="hero" class="hero-set__window" reflow>
+    <SearchBar slot="search" placeholder="Search for apps and commands..." back={false} />
+    <List>
+      <Section title="Favorites" />
+      {
+        commands.map((item, index) => {
+          const extension = byFolder.get(item.folder);
+          return (
+            <Row title={item.command} subtitle={extension?.title ?? ''} id={`hero-${item.folder}`} selected={index === 0} class="hero-set__row">
+              <span slot="icon">{extension && <ExtensionIcon extension={extension} size={20} />}</span>
+              <span>Command</span>
+            </Row>
+          );
+        })
+      }
+    </List>
+    <ActionBar slot="footer" root action="Open Command" />
+  </Window>
+</div>
+</StoryCanvas>
+
+<style is:global>
+  @layer components {
+    .hero-set {
+      position: absolute;
+      inset: 0;
+    }
+
+    /*
+     * The canvas is exactly the window's height, so no empty band sits above or below it and nothing below overlaps
+     * it: --canvas-h must equal .rc-window's block-size in mocks/raycast/Window.astro. The window centres itself.
+     */
+    @media (width >= 1150px) and (height >= 700px) {
+      .canvas[data-scene='hero'] {
+        --canvas-h: 475px;
+      }
+
+      .hero-set .rc-window {
+        inset-inline: 0;
+        inset-block-start: 0;
+        margin-inline: auto;
+      }
+    }
+
+    @media (width < 1150px), (height < 700px) {
+      .hero-set {
+        position: relative;
+        inset: auto;
+      }
+    }
+  }
+</style>
+
+<script>
+  import './HeroSet.script';
+</script>

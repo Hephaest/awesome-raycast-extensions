@@ -1,0 +1,52 @@
+---
+interface Props {
+  width: number;
+  height: number;
+}
+
+const { width, height } = Astro.props;
+---
+
+<div class="window-fit" style={`--window-width: ${width}px; --window-ratio: ${width} / ${height}`}>
+  <div class="window-fit__stage"><slot /></div>
+</div>
+
+<style is:global>
+  @layer components {
+    .window-fit, .window-fit__stage { display: contents; }
+
+    @media (width < 1150px), (height < 700px) {
+      .window-fit {
+        display: block;
+        position: relative;
+        inline-size: min(100%, var(--window-width));
+        aspect-ratio: var(--window-ratio);
+        margin-inline: auto;
+        container-type: inline-size;
+        /* Contain the unscaled layout bounds while leaving room for the 60px window shadow. */
+        overflow: clip;
+        overflow-clip-margin: 60px;
+      }
+
+      /* Safari has no overflow-clip-margin (WebKit bug 236153) and would cut the shadow at the edge, so it does not clip. */
+      @supports not (overflow-clip-margin: 60px) {
+        .window-fit {
+          overflow: visible;
+        }
+      }
+
+      .window-fit__stage {
+        display: block;
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline-start: 0;
+        inline-size: var(--window-width);
+        aspect-ratio: var(--window-ratio);
+        transform: scale(tan(atan2(100cqw, var(--window-width))));
+        transform-origin: 0 0;
+      }
+
+      .window-fit .window-fit__stage > :is(.rc-window, .browser-frame) { inset: 0; }
+    }
+  }
+</style>

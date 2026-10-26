@@ -1,0 +1,45 @@
+---
+import Icon from '../Icon.astro';
+
+/**
+ * A keyboard key as Raycast 2.9 draws it inside the app: an 11px glyph in an outlined 18px tile.
+ * The Return arrow is drawn, because each font places its ↵ glyph off the tile's center.
+ */
+interface Props {
+  keys: string;
+  id?: string;
+  class?: string;
+}
+
+const { keys, id, class: className } = Astro.props;
+---
+
+<kbd class:list={['rc-key', className]} data-key={id}
+  >{keys === '↵' ? <Icon name="return" class="rc-key__glyph" /> : keys}</kbd
+>
+
+<style is:global>
+  @layer components {
+    .rc-key {
+      display: inline-grid;
+      place-items: center;
+      min-inline-size: 18px;
+      block-size: 18px;
+      padding-inline: 4px;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--app-key-ink);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1;
+      box-shadow: inset 0 0 0 1px var(--rc-key-line);
+    }
+
+    /* The drawn glyph follows the key's font size. */
+    .rc-key__glyph {
+      inline-size: 1em;
+      block-size: 1em;
+    }
+  }
+</style>

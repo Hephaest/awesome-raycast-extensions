@@ -1,0 +1,43 @@
+---
+import type { Person } from '../../story';
+
+/**
+ * GitHub's default avatar for an account without a photo, as github.com/identicons/<login>.png draws it: a 5 by 5 grid
+ * in one colour on #f0f0f0, with half a cell of margin. Square in a macOS menu, round on github.com.
+ */
+interface Props {
+  person: Pick<Person, 'github'>;
+  size?: number;
+  round?: boolean;
+  class?: string;
+}
+
+const { person, size = 16, round = false, class: className } = Astro.props;
+const { grid, color } = person.github.identicon;
+const cells = grid.flatMap((row, y) => [...row].flatMap((on, x) => (on === '1' ? [{ x: x + 0.5, y: y + 0.5 }] : [])));
+---
+
+<svg
+  class:list={['identicon', round && 'identicon--round', className]}
+  width={size}
+  height={size}
+  viewBox="0 0 6 6"
+  shape-rendering="crispEdges"
+  aria-hidden="true"
+>
+  <rect width="6" height="6" fill="#f0f0f0" />
+  {cells.map((cell) => <rect x={cell.x} y={cell.y} width="1" height="1" fill={color} />)}
+</svg>
+
+<style is:global>
+  @layer components {
+    .identicon {
+      flex: none;
+    }
+
+    .identicon--round {
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgb(31 35 40 / 0.15);
+    }
+  }
+</style>

@@ -1,0 +1,14 @@
+---
+/** Keelson's mark, the fictional API vendor of the 10:05 docs: a white K, a keel line and a spur, on a sea-teal tile. */
+interface Props {
+  size?: number;
+  class?: string;
+}
+
+const { size = 16, class: className } = Astro.props;
+---
+
+<svg class:list={['keelson-mark', className]} width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
+  <rect width="16" height="16" rx="4" fill="var(--docs-brand)" />
+  <path d="M5.5 3.75v8.5M11 3.75 6.75 8 11 12.25" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

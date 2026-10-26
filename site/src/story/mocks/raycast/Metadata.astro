@@ -1,0 +1,38 @@
+---
+import Icon, { type IconName } from '../Icon.astro';
+
+/** Label and value rows under a detail pane, as Raycast's Detail.Metadata draws them. */
+interface Row {
+  label: string;
+  value: string;
+  /** Renders the value as a TagList pill. */
+  tag?: boolean;
+  /** Renders the value as a Metadata.Link, with the up-right arrow after it. */
+  link?: boolean;
+  /** A leading icon before the value, as a Label's icon. */
+  icon?: IconName;
+}
+
+interface Props {
+  rows: Row[];
+  class?: string;
+}
+
+const { rows, class: className } = Astro.props;
+---
+
+<div class:list={['rc-metadata', className]}>
+  {
+    rows.map((row) => (
+      <div class="rc-metadata__row">
+        <span class="rc-metadata__label">{row.label}</span>
+        <span class="rc-metadata__value">
+          {row.icon && <Icon name={row.icon} size={14} />}
+          {row.tag ? <span class="rc-tag">{row.value}</span> : row.value}
+          {row.link && <Icon name="arrow-up-right" size={20} class="rc-metadata__link" />}
+        </span>
+      </div>
+    ))
+  }
+  <slot />
+</div>

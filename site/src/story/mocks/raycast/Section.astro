@@ -1,0 +1,17 @@
+---
+interface Props {
+  title: string;
+  count?: number;
+  /** Extra classes, such as a stage's appear hook. */
+  class?: string;
+}
+
+const { title, count, class: className } = Astro.props;
+const noun = count === 1 ? 'issue' : 'issues';
+---
+
+<div class:list={['rc-section', className]}>
+  <span>{title}</span>
+  {count !== undefined && <span class="rc-section__count">{count} {noun}</span>}
+  <slot />
+</div>

@@ -1,0 +1,35 @@
+---
+import { clockHands, type Stage } from './story';
+
+interface Props {
+  stage: Stage;
+}
+
+const { stage } = Astro.props;
+const hands = clockHands(stage.time);
+const [beforeCommand, afterCommand] = stage.narration.split(stage.command);
+/* A conditional slot is registered even when its expression is false, so the rendered content decides, not slots.has. */
+const footnote = Astro.slots.has('footnote') ? (await Astro.slots.render('footnote')).trim() : '';
+---
+
+<section class="stage" id={`day-${stage.id}`} data-stage={stage.id} data-tone="light" data-reveal aria-labelledby={`heading-${stage.id}`}>
+  <div class="container stage__content">
+    <p class="label stage__time">
+      <svg class="stage__clock" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+        <circle cx="10" cy="10" r="8.3" />
+        <line x1="10" y1="10" x2="10" y2="5.6" transform={`rotate(${hands.hour} 10 10)`} />
+        <line x1="10" y1="10" x2="10" y2="3.4" transform={`rotate(${hands.minute} 10 10)`} />
+        <circle cx="10" cy="10" r="1" fill="currentColor" stroke="none" />
+      </svg>
+      <time datetime={stage.time}>{stage.time}</time>
+    </p>
+    <h3 class="display stage__heading" id={`heading-${stage.id}`}>{stage.title}</h3>
+    <p class="stage__narration">{beforeCommand}<b class="stage__command">{stage.command}</b>{afterCommand}</p>
+    <div class="stage__preview">
+      <slot />
+      {stage.id === 'handover' && <span class="stage__night" data-tone="dark" aria-hidden="true"></span>}
+    </div>
+    {footnote && <p class="stage__footnote" set:html={footnote} />}
+    <p class="visually-hidden">{stage.description}</p>
+  </div>
+</section>

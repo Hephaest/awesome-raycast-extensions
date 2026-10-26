@@ -1,0 +1,85 @@
+---
+import { execSync } from 'node:child_process';
+import { Image } from 'astro:assets';
+import { repositoryUrl } from '../data/extensions';
+import avatar from '../assets/philly-cai-github-avatar.png';
+
+/**
+ * One row of small print over a hairline: who built the site, with their GitHub avatar, and the license at the start;
+ * the date of the commit the site was built from, linked to that commit, at the end.
+ * Credits live beside what they credit, and the header already links the source, so nothing else sits here.
+ * It sits on the night like the rest of the tail, so it carries the night surface and the dark tone itself.
+ */
+
+// Read once at build time; outside a git clone the stamp is left out rather than failing the build.
+let lastUpdate: { hash: string; date: Date } | undefined;
+try {
+  const [hash, committedAt] = execSync('git log -1 --format="%H %cI"', { encoding: 'utf8' }).trim().split(' ');
+  lastUpdate = { hash, date: new Date(committedAt) };
+} catch {
+  lastUpdate = undefined;
+}
+
+const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+---
+
+<footer class="site-footer night" data-tone="dark">
+  <div class="container site-footer__row">
+    <p>
+      Built by
+      <a class="link site-footer__author" href="https://github.com/Hephaest" target="_blank" rel="noopener">
+        <Image src={avatar} alt="" width={40} height={40} class="site-footer__avatar" />
+        Philly Cai</a>. Open source under the
+      <a class="link" href={`${repositoryUrl}/blob/main/LICENSE`} target="_blank" rel="noopener">MIT License</a>.
+    </p>
+    {
+      lastUpdate && (
+        <p>
+          Updated <time datetime={lastUpdate.date.toISOString().slice(0, 10)}>{dateFormat.format(lastUpdate.date)}</time> (<a class="link" href={`${repositoryUrl}/commit/${lastUpdate.hash}`} target="_blank" rel="noopener">{lastUpdate.hash.slice(0, 7)}</a>)
+        </p>
+      )
+    }
+  </div>
+</footer>
+
+<style is:global>
+  @layer components {
+    .site-footer {
+      border-block-start: 1px solid var(--line);
+      padding-block: 32px;
+      font-size: var(--type-small);
+      line-height: 20px;
+      color: var(--ink-muted);
+    }
+
+    /* The credit starts the row and the update stamp ends it; on a narrow screen the stamp wraps under the credit. */
+    .site-footer__row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px 24px;
+    }
+
+    /* The avatar and the name stay together and wrap as one word. */
+    .site-footer__author {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      vertical-align: bottom;
+    }
+
+    /* The avatar is drawn on a clear ground, so it gets the white GitHub shows it on, or it floats on the night. */
+    .site-footer__avatar {
+      inline-size: 20px;
+      block-size: 20px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    @media (max-width: 639px) {
+      .site-footer {
+        padding-block: 24px;
+      }
+    }
+  }
+</style>

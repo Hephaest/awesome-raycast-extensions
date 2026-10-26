@@ -1,0 +1,141 @@
+---
+import { faq } from '../data/faq';
+
+/**
+ * Four short questions as disclosures in the same centred 880px column as the extension list, with a centred heading
+ * and a plus that becomes a minus when a panel is open. Plain, honest, no marketing: an answer is paragraphs, with
+ * bullets only where the answer is a list. Works without JavaScript.
+ */
+---
+
+<section class="faq" id="faq" aria-labelledby="faq-title" data-reveal>
+  <div class="container faq__inner">
+    <h2 class="display faq__title" id="faq-title">Frequently asked questions</h2>
+    <div class="faq__list">
+      {
+        faq.map((item) => (
+          <details class="faq__item">
+            <summary class="faq__question">
+              {item.question}
+              <svg class="faq__toggle" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M3 8h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                <path class="faq__toggle-v" d="M8 3v10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </summary>
+            <div class="faq__answer">
+              {
+                item.answer.map((block) =>
+                  typeof block === 'string' ? (
+                    <p>{block}</p>
+                  ) : (
+                    <ul class="faq__points">
+                      {block.map((sentence) => (
+                        <li>{sentence}</li>
+                      ))}
+                    </ul>
+                  ),
+                )
+              }
+            </div>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  @layer components {
+    .faq {
+      padding-block: var(--tail-gap);
+    }
+
+    .faq__inner {
+      display: grid;
+      justify-items: center;
+      gap: 40px;
+    }
+
+    /* The section heading size, not the display size: three words at 88px shout. */
+    .faq__title {
+      font-size: var(--type-heading);
+      text-align: center;
+    }
+
+    /* The list is as wide as the extension rows above it, with the same hairlines. */
+    .faq__list {
+      inline-size: 100%;
+      max-inline-size: 880px;
+      border-block-start: 1px solid var(--line);
+    }
+
+    .faq__item {
+      border-block-end: 1px solid var(--line);
+    }
+
+    .faq__question {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-block: 18px;
+      font-size: var(--type-body);
+      font-weight: 560;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    /* Safari still draws its own marker on summary and ignores list-style on it (checked 2026-10). */
+    .faq__question::-webkit-details-marker {
+      display: none;
+    }
+
+    /* The plus: its vertical stroke turns onto the horizontal one when the panel opens, so it reads as a minus. */
+    .faq__toggle {
+      flex: none;
+      color: var(--ink-faint);
+    }
+
+    .faq__toggle-v {
+      transform-origin: center;
+      transition: rotate 200ms var(--ease-out);
+    }
+
+    .faq__item[open] .faq__toggle-v {
+      rotate: 90deg;
+    }
+
+    .faq__answer {
+      display: grid;
+      gap: 10px;
+      padding-block-end: 20px;
+      max-inline-size: 64ch;
+      color: var(--ink-muted);
+    }
+
+    .faq__points {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding-inline-start: 20px;
+      list-style: disc;
+    }
+
+    .faq__points li::marker {
+      color: var(--ink-faint);
+    }
+
+    @media (scripting: enabled) {
+      .faq[data-reveal]:not([data-revealed]) .faq__inner {
+        opacity: 0;
+        translate: 0 12px;
+      }
+    }
+
+    .faq__inner {
+      transition:
+        opacity 500ms var(--ease-out),
+        translate 500ms var(--ease-out);
+    }
+  }
+</style>

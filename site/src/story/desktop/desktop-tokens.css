@@ -1,0 +1,198 @@
+/*
+ * Appearance tokens for everything drawn as an app: macOS, Raycast, the browser frame, the GitHub page.
+ * A canvas or a desktop card sets data-appearance once; nothing in here animates.
+ * Chrome values are Chromium's defaults; the Primer values are GitHub's.
+ */
+@layer tokens {
+  [data-appearance='light'] {
+    color-scheme: light;
+
+    --app-bg: oklch(97.5% 0.003 250);
+    --app-surface: oklch(98.5% 0.002 250);
+    --app-ink: oklch(21% 0.012 255);
+    --app-ink-2: oklch(48% 0.012 255);
+    /* Dim labels sit near 3:1, as in Raycast; decorative and aria-hidden, but Lighthouse still counts them. */
+    --app-ink-3: oklch(64% 0.01 255);
+    --app-line: rgb(0 0 0 / 0.08);
+    --app-line-strong: rgb(0 0 0 / 0.14);
+    --app-selection: rgb(0 0 0 / 0.06);
+    --app-key-ink: oklch(40% 0.01 255);
+    --app-rim: rgb(255 255 255 / 0.8);
+    --app-rim-bottom: rgb(0 0 0 / 0.08);
+    --app-shadow: 0 24px 60px -16px rgb(0 0 0 / 0.28), 0 0 0 1px rgb(0 0 0 / 0.06);
+
+    /*
+     * Raycast 2.9: the inks, the keycap outline and the pill shape are measured from captures of the real window. The
+     * glass is lighter than the measured grey, which reads too dark on this page: a faint cool-to-warm tint over near-white.
+     */
+    --rc-window: linear-gradient(160deg, rgb(236 240 244), rgb(240 237 236) 70%, rgb(238 233 233));
+    --rc-window-rim: rgb(255 255 255 / 0.55);
+    --rc-pill: rgb(255 255 255 / 0.92);
+    --rc-pill-edge: rgb(0 0 0 / 0.11);
+    --rc-selection: rgb(0 0 0 / 0.07);
+    --rc-key-line: rgb(0 0 0 / 0.2);
+    --rc-ink: rgb(0 0 0);
+    --rc-ink-2: rgb(71 71 71);
+    --rc-ink-3: rgb(79 79 79);
+    /* The quietest ink: section counts, the search placeholder and the panel search. */
+    --rc-ink-4: rgb(118 118 118);
+    --rc-tag-tint: 19%;
+
+    /* The menu bar sits over the wallpaper's dark sky, and macOS 26 inks it from the wallpaper, so it is white in both appearances. */
+    --menubar-ink: #fff;
+
+    --chrome-frame: #d3e3fd;
+    --chrome-toolbar: #ffffff;
+    --chrome-omnibox: #eef3fb;
+    --chrome-text: #1f1f1f;
+    --chrome-text-2: #474747;
+    --chrome-line: rgb(0 0 0 / 0.08);
+
+    --primer-bg: #ffffff;
+    --primer-bg-2: #f6f8fa;
+    --primer-ink: #1f2328;
+    --primer-ink-2: #59636e;
+    --primer-border: #d1d9e0;
+    --primer-green: #1f883d;
+    --primer-purple: #8250df;
+    --primer-red: #cf222e;
+    --primer-blue: #0969da;
+    --primer-on-emphasis: #ffffff;
+    --primer-inset: #f6f8fa;
+    --primer-border-muted: #d1d9e0b3;
+    --primer-control-ink: #25292e;
+    --primer-neutral-muted: #818b981f;
+    --primer-success-ink: #1a7f37;
+    --primer-danger-ink: #d1242f;
+    --primer-green-edge: #1a7f37;
+    --primer-accent-muted: #ddf4ff;
+    --primer-tab-underline: #fd8c73;
+    --primer-button-bg: #f6f8fa;
+    --primer-button-shadow: 0 1px 0 #1f23280a;
+    --primer-button-primary-edge: #1f232826;
+    --primer-button-primary-shadow: 0 1px 1px #1f23280a, 0 1px 2px #1f232808;
+    --primer-overlay-bg: #ffffff;
+    --primer-overlay-shadow: 0 0 0 1px #d1d9e040, 0 6px 12px -3px #25292e0a, 0 6px 18px #25292e1f;
+    --primer-diff-add: #dafbe1;
+    --primer-diff-add-number: #aceebb;
+    --primer-diff-delete: #ffebe9;
+    --primer-diff-delete-number: #ffcecb;
+    --primer-diff-hunk: #ddf4ff;
+    --primer-diff-hunk-number: #b6e3ff;
+    --primer-syntax-keyword: #cf222e;
+    --primer-syntax-constant: #0550ae;
+    --primer-syntax-string: #0a3069;
+    --primer-syntax-entity: #6639ba;
+
+    /* Keelson's docs, a fictional API vendor's site in the mint docs layout: white page, grey inks, a deep sea-teal brand. */
+    --docs-bg: #ffffff;
+    --docs-ink: #0f1115;
+    --docs-ink-2: #3f4450;
+    --docs-ink-3: #6b7280;
+    --docs-line: rgb(0 0 0 / 0.08);
+    --docs-fill: rgb(0 0 0 / 0.035);
+    --docs-brand: oklch(48% 0.09 210);
+    --docs-button: #0f1115;
+    --docs-on-button: #ffffff;
+
+    --status-green: oklch(58% 0.17 150);
+    --status-blue: oklch(56% 0.16 255);
+    --status-red: oklch(56% 0.2 25);
+    --status-orange: oklch(66% 0.17 55);
+    --status-yellow: oklch(64% 0.14 72);
+    --status-purple: oklch(58% 0.16 300);
+  }
+
+  [data-appearance='dark'] {
+    color-scheme: dark;
+
+    --app-bg: oklch(19% 0.012 255);
+    --app-surface: oklch(22% 0.012 255);
+    --app-ink: oklch(96% 0.005 250);
+    --app-ink-2: oklch(72% 0.01 255);
+    --app-ink-3: oklch(56% 0.01 255);
+    --app-line: rgb(255 255 255 / 0.1);
+    --app-line-strong: rgb(255 255 255 / 0.16);
+    --app-selection: rgb(255 255 255 / 0.1);
+    --app-key-ink: rgb(255 255 255 / 0.65);
+    --app-rim: rgb(255 255 255 / 0.22);
+    --app-rim-bottom: rgb(0 0 0 / 0.35);
+    --app-shadow: 0 24px 60px -16px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.08);
+
+    /* Raycast 2.9 dark, measured from captures of the real window: a flat near-black glass, white titles, three greys. */
+    --rc-window: rgb(28 28 29);
+    --rc-window-rim: var(--app-rim);
+    --rc-pill: rgb(255 255 255 / 0.03);
+    --rc-pill-edge: rgb(255 255 255 / 0.08);
+    --rc-selection: rgb(255 255 255 / 0.085);
+    --rc-key-line: rgb(255 255 255 / 0.24);
+    --rc-ink: rgb(255 255 255);
+    --rc-ink-2: rgb(173 173 173);
+    --rc-ink-3: rgb(164 164 165);
+    --rc-ink-4: rgb(120 120 121);
+    --rc-tag-tint: 28%;
+
+    --menubar-ink: #fff;
+
+    --chrome-frame: #1f2020;
+    --chrome-toolbar: #3c3c3c;
+    --chrome-omnibox: #282828;
+    --chrome-text: #e3e3e3;
+    --chrome-text-2: #c7c7c7;
+    --chrome-line: rgb(255 255 255 / 0.08);
+
+    --primer-bg: #0d1117;
+    --primer-bg-2: #151b23;
+    --primer-ink: #f0f6fc;
+    --primer-ink-2: #9198a1;
+    --primer-border: #3d444d;
+    --primer-green: #238636;
+    --primer-purple: #8957e5;
+    --primer-red: #da3633;
+    --primer-blue: #4493f8;
+    --primer-on-emphasis: #ffffff;
+    --primer-inset: #010409;
+    --primer-border-muted: #3d444db3;
+    --primer-control-ink: #f0f6fc;
+    --primer-neutral-muted: #656c7633;
+    --primer-success-ink: #3fb950;
+    --primer-danger-ink: #f85149;
+    --primer-green-edge: #238636;
+    --primer-accent-muted: #388bfd1a;
+    --primer-tab-underline: #f78166;
+    --primer-button-bg: #212830;
+    --primer-button-shadow: 0 0 transparent;
+    --primer-button-primary-edge: #ffffff1a;
+    --primer-button-primary-shadow: 0 0 transparent;
+    --primer-overlay-bg: #151b23;
+    --primer-overlay-shadow: 0 0 0 1px #3d444d, 0 6px 12px -3px #01040966, 0 6px 18px #01040966;
+    --primer-diff-add: #2ea04326;
+    --primer-diff-add-number: #3fb9504d;
+    --primer-diff-delete: #f851491a;
+    --primer-diff-delete-number: #f851494d;
+    --primer-diff-hunk: #388bfd1a;
+    --primer-diff-hunk-number: #388bfd66;
+    --primer-syntax-keyword: #ff7b72;
+    --primer-syntax-constant: #79c0ff;
+    --primer-syntax-string: #a5d6ff;
+    --primer-syntax-entity: #d2a8ff;
+
+    --docs-bg: #0b0d10;
+    --docs-ink: #f2f4f7;
+    --docs-ink-2: #c3c7cf;
+    --docs-ink-3: #8b919c;
+    --docs-line: rgb(255 255 255 / 0.09);
+    --docs-fill: rgb(255 255 255 / 0.05);
+    --docs-brand: oklch(74% 0.09 210);
+    --docs-button: #f2f4f7;
+    --docs-on-button: #0b0d10;
+
+    /* Measured from the dark Jira list: the type icons, priorities, In Progress status and epic tag. */
+    --status-green: rgb(106 154 35);
+    --status-blue: rgb(71 136 236);
+    --status-red: rgb(241 91 80);
+    --status-orange: rgb(224 108 1);
+    --status-yellow: rgb(255 197 49);
+    --status-purple: rgb(164 133 255);
+  }
+}

@@ -1,0 +1,48 @@
+---
+import Icon from '../Icon.astro';
+
+/** A two-initial avatar on a colored circle. "You" is the bare person outline the extension draws for a person without a photo. */
+interface Props {
+  initials?: string;
+  hue?: number;
+  size?: number;
+  class?: string;
+}
+
+const { initials = '', hue = 0, size = 20, class: className } = Astro.props;
+---
+
+{
+  initials ? (
+    <span class:list={['rc-avatar', className]} style={`--size: ${size}px; --hue: ${hue}`}>
+      {initials}
+    </span>
+  ) : (
+    <span class:list={['rc-avatar', 'rc-avatar--you', className]} style={`--size: ${size}px`}>
+      <Icon name="person" size={Math.round(size * 0.9)} />
+    </span>
+  )
+}
+
+<style is:global>
+  @layer components {
+    .rc-avatar {
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      inline-size: var(--size);
+      block-size: var(--size);
+      border-radius: 50%;
+      background: oklch(45% 0.12 var(--hue));
+      color: oklch(96% 0.02 var(--hue));
+      font-size: calc(var(--size) * 0.42);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .rc-avatar--you {
+      background: transparent;
+      color: var(--app-ink-2);
+    }
+  }
+</style>

@@ -1,0 +1,109 @@
+---
+/**
+ * A toast as Raycast 2.9 shows it: it takes the footer's left pill, 8px in from the window's bottom left, measured from
+ * real captures. Progress spins a white ring; success glows a green dot on a green-tinted pill. Rendered at opacity 0
+ * in place; the stage script brings it in and out.
+ */
+interface Props {
+  kind: 'progress' | 'success';
+  title: string;
+  message?: string;
+  id?: string;
+}
+
+const { kind, title, message, id } = Astro.props;
+---
+
+<div class="rc-toast" data-toast={id} data-kind={kind}>
+  <span class="rc-toast__icon">
+    {kind === 'progress' ? <i class="rc-toast__spinner"></i> : <i class="rc-toast__dot"></i>}
+  </span>
+  <span class="rc-toast__text">
+    <strong>{title}</strong>
+    {message && <span>{message}</span>}
+  </span>
+</div>
+
+<style is:global>
+  @layer components {
+    /* The pill lies over the footer's own left pill, so it carries the window's surface under its fill to hide it. */
+    .rc-toast {
+      --toast-tint: transparent;
+      position: absolute;
+      inset-inline-start: 8px;
+      inset-block-end: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      block-size: 36px;
+      max-inline-size: calc(100% - 16px);
+      padding-inline: 11px 16px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 22px 50%, var(--toast-glow, transparent), transparent 34px),
+        linear-gradient(var(--toast-tint), var(--toast-tint)),
+        linear-gradient(var(--rc-pill), var(--rc-pill)),
+        var(--rc-window);
+      box-shadow:
+        inset 0 0 0 1px var(--rc-window-rim),
+        0 2px 6px var(--rc-pill-edge);
+      color: var(--app-ink);
+      font-size: 14px;
+      opacity: 0;
+      z-index: 3;
+    }
+
+    .rc-toast[data-kind='success'] {
+      --toast-tint: color-mix(in srgb, var(--status-green) 5%, transparent);
+      --toast-glow: color-mix(in srgb, var(--status-green) 22%, transparent);
+    }
+
+    .rc-toast__icon {
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      inline-size: 16px;
+      block-size: 16px;
+    }
+
+    .rc-toast__spinner {
+      inline-size: 11px;
+      block-size: 11px;
+      border: 2px solid currentColor;
+      border-block-start-color: transparent;
+      border-radius: 50%;
+      animation: rc-spin 0.8s linear infinite;
+    }
+
+    .rc-toast__dot {
+      inline-size: 6px;
+      block-size: 6px;
+      border-radius: 50%;
+      background: var(--status-green);
+      box-shadow: 0 0 6px var(--status-green);
+    }
+
+    @keyframes rc-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .rc-toast__text {
+      display: flex;
+      gap: 8px;
+      min-inline-size: 0;
+      white-space: nowrap;
+      overflow: clip;
+      text-overflow: ellipsis;
+    }
+
+    .rc-toast__text strong {
+      font-weight: 500;
+    }
+
+    .rc-toast__text span {
+      color: var(--app-ink-2);
+    }
+  }
+</style>

@@ -1,0 +1,205 @@
+---
+import Window from '../mocks/raycast/Window.astro';
+import WindowFit from '../desktop/WindowFit.astro';
+import SearchBar from '../mocks/raycast/SearchBar.astro';
+import ActionBar from '../mocks/raycast/ActionBar.astro';
+import ActionPanel from '../mocks/raycast/ActionPanel.astro';
+import List from '../mocks/raycast/List.astro';
+import Row from '../mocks/raycast/Row.astro';
+import Detail from '../mocks/raycast/Detail.astro';
+import Keystroke from '../mocks/Keystroke.astro';
+import Toast from '../mocks/raycast/Toast.astro';
+import Avatar from '../mocks/raycast/Avatar.astro';
+import Icon, { type IconName } from '../mocks/Icon.astro';
+import { extensionByFolder } from '../../data/extensions';
+import { zadig, zadigRuns } from '../story';
+
+/*
+ * 15:20, measured from light captures of Search Workflows. ↵ opens the runs on failed #417; ⌘K, three Downs and ↵ pick
+ * Retry Run; Raycast's confirm alert takes ↵; the footer pill shows the animated toast, then the success one, and #417
+ * runs. Later, ⌘R shows it passed. The markup is the final frame: #417 passed.
+ */
+const { run } = zadig;
+const time = (clock: string) => `${zadig.date}, ${clock}:00`;
+const states = [
+  { id: 'failed', icon: 'x-circle', started: run.createdAt, ended: run.failedAt },
+  { id: 'running', icon: 'progress', started: run.retriedAt, ended: undefined },
+  { id: 'passed', icon: 'check-circle', started: run.retriedAt, ended: run.passedAt },
+] as const satisfies readonly { id: string; icon: IconName; started: string; ended?: string }[];
+const chords = [
+  { id: 'open', keys: ['↵'] },
+  { id: 'actions', keys: ['⌘', 'K'] },
+  { id: 'down', keys: ['↓'] },
+  { id: 'return', keys: ['↵'] },
+  { id: 'refresh', keys: ['⌘', 'R'] },
+];
+const zadigIcon = extensionByFolder('zadig').icon;
+---
+
+<div class="subenv">
+  <WindowFit width={750} height={475}>
+    <Window id="subenvironment">
+      <div slot="search" class="subenv__layers">
+        <div data-layer="workflow-list"><SearchBar placeholder="Search workflows..." dropdown={zadig.projectName} /></div>
+        <div data-layer="runs"><SearchBar placeholder="Filter loaded runs by number, creator or status..." /></div>
+      </div>
+      <div class="subenv__view" data-layer="workflow-list">
+        <List>
+          <Row title={zadig.workflow} id="workflow" selected>
+            <span>{zadig.updatedOn}</span>
+            <Avatar initials={zadig.updatedBy[0].toUpperCase()} hue={165} size={18} />
+          </Row>
+        </List>
+      </div>
+      <div class="subenv__view" data-layer="runs">
+        <div class="rc-split">
+          <List split>
+            {zadigRuns.map((entry, index) => (
+              <Row title={`#${entry.number}`} id={String(entry.number)} selected={index === 0}>
+                <span slot="icon" class="subenv__stack">
+                  {index === 0 ? (
+                    states.map((state) => <span data-state={state.id}><Icon name={state.icon} class={`subenv__${state.id}`} /></span>)
+                  ) : (
+                    <Icon name={entry.passed ? 'check-circle' : 'x-circle'} class={entry.passed ? 'subenv__passed' : 'subenv__failed'} />
+                  )}
+                </span>
+              </Row>
+            ))}
+          </List>
+          <Detail heading={`Repositories (${zadig.repositories.length})`} level={1}>
+            {zadig.repositories.map((repository) => (
+              <>
+                <h4 class="subenv__repository">{repository.name}</h4>
+                <ul class="subenv__bullets">
+                  <li>Branch: {repository.branch}</li>
+                  <li>Commit: {repository.commit}</li>
+                  <li>Subject: {repository.subject}</li>
+                </ul>
+              </>
+            ))}
+            <div class="rc-metadata" slot="metadata">
+              <div class="rc-metadata__row">
+                <span class="rc-metadata__label">Status</span>
+                <span class="rc-metadata__value subenv__stack">
+                  {states.map((state) => <span class={`rc-tag subenv__${state.id}`} data-state={state.id}>{state.id}</span>)}
+                </span>
+              </div>
+              <div class="rc-metadata__row"><span class="rc-metadata__label">Stages</span><span class="rc-metadata__value">{zadig.stages.map((stage) => <span class="rc-tag">{stage}</span>)}</span></div>
+              <div class="rc-metadata__row"><span class="rc-metadata__label">{zadig.envChoice}</span><span class="rc-metadata__value">{zadig.subEnvironment}</span></div>
+              <div class="rc-metadata__row"><span class="rc-metadata__label">Started By</span><span class="rc-metadata__value"><Avatar initials="W" hue={145} size={16} />{run.startedBy}</span></div>
+              <div class="rc-metadata__row"><span class="rc-metadata__label">Created</span><span class="rc-metadata__value">{time(run.createdAt)}</span></div>
+              <div class="rc-metadata__row">
+                <span class="rc-metadata__label">Started</span>
+                <span class="rc-metadata__value subenv__stack">{states.map((state) => <span data-state={state.id}>{time(state.started)}</span>)}</span>
+              </div>
+              <div class="rc-metadata__row">
+                <span class="rc-metadata__label">Ended</span>
+                <span class="rc-metadata__value subenv__stack">{states.map((state) => <span data-state={state.id}>{state.ended ? time(state.ended) : '-'}</span>)}</span>
+              </div>
+            </div>
+          </Detail>
+        </div>
+      </div>
+      <div slot="footer" class="subenv__layers">
+        <div data-layer="workflow-list"><ActionBar extension="zadig" command="Search Workflows" action="Show Runs" /></div>
+        <div data-layer="runs"><ActionBar extension="zadig" command={zadig.workflow} action="Open in Browser" /></div>
+      </div>
+      <ActionPanel slot="overlay" id="workflow-actions" sections={[
+        { actions: [
+          { title: 'Open in Browser', icon: 'globe', keys: ['↵'], id: 'open', selected: true },
+          { title: 'Copy Link', icon: 'clipboard', keys: ['⌘', '↵'], id: 'copy' },
+          { title: 'Refresh', icon: 'refresh', keys: ['⌘', 'R'], id: 'refresh' },
+        ] },
+        { title: 'Operations', actions: [{ title: 'Retry Run', icon: 'repeat', id: 'retry' }] },
+      ]} />
+      <div slot="overlay" class="subenv__scrim" data-confirm-scrim></div>
+      <div slot="overlay" class="subenv__alert" data-confirm>
+        <img class="subenv__alert-icon" src={zadigIcon.src} alt="" width="64" height="64" />
+        <strong class="subenv__alert-title">Retry run #{run.number}?</strong>
+        <p class="subenv__alert-message">This reruns the jobs of {zadig.workflow} #{run.number} that did not pass, with the same inputs, deploy jobs included.</p>
+        <span class="subenv__alert-buttons">
+          <span class="subenv__alert-button subenv__alert-button--cancel">Cancel</span>
+          <span class="subenv__alert-button" data-confirm-button>Retry Run</span>
+        </span>
+      </div>
+      <Toast slot="overlay" kind="progress" title={`Retrying run #${run.number}`} id="retrying" />
+      <Toast slot="overlay" kind="success" title={`Retried run #${run.number}`} id="retried" />
+      {chords.map((chord) => <Keystroke slot="overlay" name={chord.id} keys={chord.keys.map((key, index) => ({ key, id: `${chord.id}-${index}` }))} />)}
+    </Window>
+  </WindowFit>
+</div>
+
+<style is:global>
+  @layer components {
+    .subenv { position: absolute; inset: 0; }
+    @media (width >= 1150px) and (height >= 700px) {
+      .canvas[data-scene='subenvironment'] { --canvas-h: 475px; }
+      .subenv .rc-window { inset-inline-start: 120px; inset-block-start: 0; }
+    }
+    @media (width < 1150px), (height < 700px) {
+      .subenv { position: relative; inset: auto; }
+    }
+    .subenv__layers, .subenv__stack { display: grid; }
+    .subenv__layers > *, .subenv__stack > * { grid-area: 1 / 1; }
+    .subenv .rc-window__body { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+    .subenv__view { grid-area: 1 / 1; min-inline-size: 0; min-block-size: 0; }
+    .subenv .rc-split { grid-template-rows: minmax(0, 1fr); }
+    /*
+     * Raycast gives the markdown a fixed top band and the metadata the rest down to the window's bottom edge, under the
+     * footer pills; seven rows do not fit, so the last ones run under the pills and the window clips them.
+     */
+    .subenv .rc-window__body { overflow: visible; }
+    .subenv .rc-detail { grid-template-rows: 232px minmax(0, 1fr); margin-block-end: -52px; }
+    .subenv .rc-metadata { padding-block-end: 0; overflow: clip; mask-image: linear-gradient(to bottom, black calc(100% - 96px), rgb(0 0 0 / 0.25) calc(100% - 20px)); }
+    /* The extension's markdown is a ## heading over ### repositories and 14px bullets. */
+    .subenv .rc-detail .rc-detail__heading { font-size: 20px; line-height: 25px; margin-block-end: 0; }
+    /* The markdown runs past the pane with three repositories; Raycast fades it out above the metadata. */
+    .subenv .rc-detail__content { min-block-size: 0; mask-image: linear-gradient(to bottom, black calc(100% - 96px), transparent calc(100% - 36px)); }
+    /* The footer pills stay above the metadata that runs under them. */
+    .subenv .rc-actionbar { position: relative; z-index: 2; }
+    .subenv .rc-metadata__label { flex: none; }
+    .subenv .rc-metadata__value { min-inline-size: 0; overflow: clip; text-overflow: ellipsis; }
+
+    /* Run #417 stacks its three states; the final frame shows passed, and the script walks failed, running, passed. */
+    .subenv [data-layer='workflow-list'], .subenv [data-state='failed'], .subenv [data-state='running'] { opacity: 0; }
+    .subenv__passed { color: var(--status-green); --tag: var(--status-green); }
+    .subenv__failed { color: var(--status-red); --tag: var(--status-red); }
+    .subenv__running { color: var(--status-blue); --tag: var(--status-blue); }
+
+    /* The extension's markdown: an ### heading per repository over three bullets with Raycast's red markers. */
+    .subenv__repository { margin-block: 22px 9px; font-size: 16px; font-weight: 700; line-height: 20px; }
+    .subenv__bullets { display: grid; gap: 10px; padding-inline-start: 22px; list-style: disc; font-size: 14px; line-height: 19px; color: var(--app-ink); }
+    .subenv .rc-split .rc-row .icon { inline-size: 19px; block-size: 19px; }
+    .subenv__bullets li::marker { color: var(--status-red); }
+
+    /* Raycast's confirmAlert, measured: a 258px glass card over a grey scrim, the extension icon, two pill buttons. */
+    .subenv__scrim { position: absolute; inset: 0; background: rgb(0 0 0 / 0.42); opacity: 0; z-index: 5; }
+    .subenv__alert {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      justify-items: start;
+      inline-size: 258px;
+      block-size: fit-content;
+      margin: auto;
+      padding: 21px 17px 15px;
+      border-radius: 22px;
+      background: rgb(225 224 224 / 0.96);
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.6), 0 0 0 0.5px rgb(0 0 0 / 0.2), 0 16px 40px rgb(0 0 0 / 0.25);
+      color: rgb(0 0 0);
+      text-align: start;
+      opacity: 0;
+      z-index: 6;
+      translate: 0 -20px;
+    }
+    .subenv__alert-icon { inline-size: 64px; block-size: 64px; margin-block-end: 18px; }
+    .subenv__alert-title { font-size: 13px; font-weight: 500; line-height: 17px; }
+    .subenv__alert-message { margin-block: 6px 0; font-size: 11.5px; line-height: 14.5px; }
+    .subenv__alert-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; inline-size: 100%; margin-block-start: 20px; }
+    .subenv__alert-button { display: grid; place-items: center; block-size: 32px; border-radius: 16px; background: rgb(0 0 0 / 0.11); font-size: 14px; }
+    .subenv__alert-button--cancel { color: rgb(0 0 0 / 0.5); }
+  }
+</style>
+<script>
+  import './SubEnvironment.script';
+</script>
