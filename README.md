@@ -15,14 +15,14 @@ Browse your saved Jira filters, with each issue's parent shown on the list. See 
 See the pull requests waiting on you from the menu bar, and search your review requests. See [github/README.md](github/README.md).
 
 ### Zadig
-Search your Zadig workflow runs and environments, and manage sub-environments. See [zadig/README.md](zadig/README.md).
+Search your Zadig workflow runs and environments, and manage sub-environments. See [zadig/README.md](zadig/README.md). It's also available at the [Raycast Store](https://www.raycast.com/philly_cai/zadig).
 
 ### English Dictionary
 Look up English words in Wiktionary, Collins and Merriam-Webster, and hear them pronounced. See [english-dictionary/README.md](english-dictionary/README.md).
 
 ## 🛠 Installation
 1. Clone this repository.
-2. In Raycast, run **Import Extension** and select an extension folder, such as `zadig`, not the repository root.
+2. In Raycast, run **Import Extension** and select an extension folder, such as `jira`, not the repository root.
 3. When Raycast asks, fill in the extension's required preferences, such as an access token.
 
 ## 📬 Contributions
