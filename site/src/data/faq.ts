@@ -20,9 +20,9 @@ const upstreamAuthorOf = (folder: string) => {
 
 export const faq: FaqItem[] = [
   {
-    question: 'Why aren\'t they in the Raycast Store?',
+    question: 'Are they in the Raycast Store?',
     answer: [
-      'They started as tools for me and my team. I\'m working on getting Zadig into the Store, and the others may follow.',
+      `${titleOf('zadig')} is, so install it from the Raycast Store and Raycast keeps it up to date. All four started as tools for me and my team, and the others may follow.`,
       `${titleOf('jira')} began as a fork of ${upstreamAuthorOf('jira')}'s Store extension, and ${titleOf('github')} as a fork of ${upstreamAuthorOf('github')}'s. None of the four is affiliated with Raycast, Atlassian, GitHub or KodeRover.`,
     ],
   },
@@ -47,7 +47,8 @@ export const faq: FaqItem[] = [
   {
     question: 'How do I update?',
     answer: [
-      'Get the new version, then import its folder again with Import Extension:',
+      `${titleOf('zadig')} from the Raycast Store updates itself. If you imported ${titleOf('zadig')} from a zip or a clone, install it from the Store once, and Raycast keeps it up to date from then on.`,
+      'For the others, get the new version, then import its folder again with Import Extension:',
       [
         'If you use the zip, download the latest one from the extension\'s row.',
         'If you cloned the repo, pull and run npm install in the extension\'s folder first.',

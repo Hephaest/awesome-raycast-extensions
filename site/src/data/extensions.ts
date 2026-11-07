@@ -17,7 +17,6 @@ export const readmeUrl = (folder: string) => `${repositoryUrl}/blob/main/${folde
 
 /** The zip the release workflow attaches for the folder; 404 until the first v* tag is pushed. */
 export const releaseZipUrl = (folder: string) => `${repositoryUrl}/releases/latest/download/${folder}.zip`;
-
 export interface Extension {
   /** The extension's folder name in the repository, which is also what Raycast imports. */
   folder: string;
@@ -31,6 +30,8 @@ export interface Extension {
   tint: string;
   /** Set when the extension is a fork, so the page credits the original authors. */
   upstream?: { author: string };
+  /** Set when the extension is in the Raycast Store, so its row installs from there instead of the release zip. */
+  store?: { url: string };
 }
 
 /** In the story's order of first use. */
@@ -58,6 +59,8 @@ export const extensions: Extension[] = [
     line: 'Retry runs and restart services in a few keystrokes.',
     icon: zadigIcon,
     tint: 'oklch(62% 0.21 350)',
+    // The Store builds the page URL from the manifest's author and name.
+    store: { url: `https://www.raycast.com/${zadigManifest.author}/${zadigManifest.name}` },
   },
   {
     folder: 'english-dictionary',
